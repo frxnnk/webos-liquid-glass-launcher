@@ -1,16 +1,19 @@
 # Mi pantalla
 
-> **Incidente abierto en 0.7.7 prerelease:** después de confirmar colores de YouTube en las
-> luces, volver con Home dejó la pantalla negra, también tras standby. El dueño confirmó la
-> imagen recuperada después de desenchufar 60 s. Las seis luces se restauraron por recuperación
-> offline y lectura independiente exacta 6/6; la causa sigue sin aislar. PicCap está detenido
-> e HyperHDR apagado; no volver a activar la captura.
-> [Estado, medidas tomadas y límites](docs/incidents/2026-10-21-black-screen.md).
+> **0.7.8 experimental instalada:** incluye un parche del capturador y parada completa desde
+> Manual. La carrera original se reprodujo fuera de la TV; el parche pasa las pruebas locales.
+> En la TV se comprobó la versión nativa nueva y el estado «lista para iniciar», con captura
+> apagada, salida LED apagada y sin recuperación pendiente. Manual por API ya detuvo PicCap
+> y restauró 6/6 estados exactos; Home con captura apagada devolvió Mi pantalla como foreground.
+> **Colores de video y Home con captura activa siguen pendientes de confirmación física.**
+> No se presenta como cura acreditada del bloqueo del kernel. Suite local: 590/590.
+> [Cambios, reproducción y límites](docs/capture-repair.md) ·
+> [Incidente de 0.7.7](docs/incidents/2026-10-21-black-screen.md).
 
 Un inicio personalizado para LG webOS: tus apps, fotos y el control del living en una pantalla
 Liquid Glass que se maneja con el control remoto.
 
-**0.7.7 prerelease instalada, con el incidente conocido indicado arriba.** Conserva un acceso a Homebrew Channel y un auditor
+**0.7.8 experimental instalada, con la validación pendiente indicada arriba.** Conserva un acceso a Homebrew Channel y un auditor
 de privacidad y recursos de sólo lectura. Los ocho accesos entran a 1080p y 720p. El acceso
 abrió Homebrew Channel en la TV; no instala paquetes ni obtiene root por sí mismo.
 

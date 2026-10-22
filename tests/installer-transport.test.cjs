@@ -83,12 +83,22 @@ test('combined output is capped at 20 MiB and the process is killed', async () =
   assert.equal(proc.killedWith, 'SIGKILL');
 });
 
-test('invalid scripts and expanded deadlines are rejected before spawning', async () => {
+test('invalid scripts and deadlines beyond the bounded capture budget are rejected before spawning', async () => {
   let calls = 0;
   const transport = api.createTransport(config, {spawn() { calls++; return child(); }});
   for (const script of ['', 'a\0b', Buffer.from('not a string')]) await assert.rejects(transport.runRemote(script));
-  for (const timeoutMs of [0, 20001, Infinity]) await assert.rejects(transport.runRemote('id -u\n', {timeoutMs}));
+  for (const timeoutMs of [0, 25001, Infinity]) await assert.rejects(transport.runRemote('id -u\n', {timeoutMs}));
   assert.equal(calls, 0);
+});
+
+test('an explicit 25-second capture budget is accepted without changing strict SSH connection options',async()=>{
+  let calls=0;
+  const transport=api.createTransport(config,{spawn(command,args){
+    calls++;assert.ok(args.includes('ConnectTimeout=8'));const proc=child();
+    queueMicrotask(()=>{proc.stdout.write('complete');proc.emit('close',0);});return proc;
+  }});
+  assert.deepEqual(await transport.runRemote('capture-test\n',{timeoutMs:25000}),{stdout:'complete'});
+  assert.equal(calls,1);
 });
 
 test('stderr contributes to the same output budget and is never returned', async () => {

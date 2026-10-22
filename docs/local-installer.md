@@ -2,7 +2,7 @@
 
 Estado al **2026-10-21**. El programa ya está implementado en `installer/` y se inicia con
 `npm run setup`. Sirve una interfaz local para Brave; no instala un agente de instalación
-permanente en la TV. **Mi pantalla 0.7.7 ya está instalada; el botón Pantalla completa todavía
+permanente en la TV. **Mi pantalla 0.7.8 ya está instalada; el botón Pantalla completa todavía
 requiere prueba física.** En el checkpoint 0.7.6 desde el asistente de PC, el dueño confirmó
 colores de video en seis WiZ y se verificó su restauración 6/6, incluidas dos escenas.
 Este trabajo no es un rediseño nuevo del Home.
@@ -67,7 +67,7 @@ No existen comandos CLI públicos `setup --plan`, `--apply` o `--restore`.
 
 | Acción elegida | Alcance y límite |
 | --- | --- |
-| Instalar Mi pantalla | Si la app está ausente, descarga el IPK público fijo y comprueba SHA-256 antes de instalar. Con 0.7.7 ya instalada omite ese paso. Otra versión queda bloqueada hasta implementar preservación de actualizaciones. |
+| Instalar Mi pantalla | Si la app está ausente, descarga el IPK público fijo y comprueba SHA-256 antes de instalar. Con 0.7.8 ya instalada omite ese paso. Otra versión queda bloqueada hasta implementar preservación de actualizaciones. |
 | Usar Mi pantalla como inicio | Cambia sólo `home` dentro del mapa actual de defaults; prepara Home nativo, arranque y guardia mediante hooks propios 59/60 de HBC. Conserva baselines históricos. |
 | Reducir publicidad de LG | Siete preferencias conocidas y los dos permisos RDX `analyticsLog`/`crashLog`; respaldo, lectura posterior y hook propio 61. No apaga todo el tráfico de la TV. |
 | Apps LG opcionales | Sólo LG Streaming Week (`webos.day`), LG Sports Playbook (`epoxyaisports`) y LG Channels (`lgchannels.home`), marcadas individualmente. Exige no sistema y removible; no permite IDs arbitrarios. |
@@ -116,22 +116,27 @@ original: encendido, brillo, RGB, temperatura y escena, incluidas las dos escena
 Esto no acredita HDMI, contenido protegido o captura automática al encender. [Estado exacto](screen-sync.md).
 Nunca copiar tokens, direcciones o atestaciones de otra TV.
 
-La 0.7.7 espera la habilitación efectiva de `LEDDEVICE`: un ACK de orden encolada no basta.
+La 0.7.8 espera la habilitación efectiva de `LEDDEVICE`: un ACK de orden encolada no basta.
 La fachada de la TV distingue activa de preparada y consulta el estado una vez después de
 Pantalla completa o Manual. Si esa lectura falla, conserva el modo confirmado y permite Manual,
-sin afirmar luces apagadas. **La prueba física de este botón con 0.7.7 sigue pendiente.**
+sin afirmar luces apagadas. **La prueba física de este botón con 0.7.8 sigue pendiente.**
+
+La 0.7.8 exige el [capturador experimental parcheado](capture-repair.md) para iniciar video.
+El asistente no instala ese parche nativo automáticamente. Preparar confirma PicCap apagado
+después de guardar ajustes; un fallo o timeout no acredita esa parada. Start y Stop esperan
+hasta 25 s y conservan la recuperación pendiente si falta confirmación.
 
 ## Paquete público fijado
 
-[Release v0.7.7](https://github.com/frxnnk/webos-liquid-glass-launcher/releases/tag/v0.7.7):
-`com.frxn.mipantalla_0.7.7_all.ipk`, **56 archivos, 1.694.056 bytes**.
+[Release v0.7.8](https://github.com/frxnnk/webos-liquid-glass-launcher/releases/tag/v0.7.8):
+`com.frxn.mipantalla_0.7.8_all.ipk`, **57 archivos, 1.696.600 bytes**.
 
 ```text
-SHA-256: dd107a1cf409d7348cf4efd04eb3de432afd129358701f57470c05485e2f1e17
+SHA-256: 09cf04a51d5ebf9cfb51bd28dc43fc49700443e54aabb89a18846ae462547d60
 ```
 
 No contiene `weather-config.js`, `lights-config.js` ni `screen-config.json`. Es distinto del IPK
-privado instalado en la TV: no sobrescribir una instalación 0.7.7 existente
+privado instalado en la TV: no sobrescribir una instalación 0.7.8 existente
 con este paquete para «igualar hashes». El piloto la omite; la actualización con preservación
 de configuración privada sigue pendiente. El hash se verifica también antes de la instalación
 remota; una descarga fallida o distinta no se instala.

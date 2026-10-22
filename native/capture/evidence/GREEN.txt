@@ -1,0 +1,15 @@
+Command: sh native/capture/run-tests.sh
+Exit: 0
+{"prepared": true, "upstream": "00c932f092084b234b3f619b060a98fa134c12bd", "patchSha256": "d8a01a6f0faa9e4da470a9d236c788b8df1d6afe85ab60302af75885d57cf8eb", "version": "00c932f-mipantalla-single-owner1"}
+callbacks=1 releases=1 terminates=1 lifetime_violations=0
+PASS: frame remains valid through callback and release
+PASS: metrics starts=1 waits=1 callbacks=0 releases=0 terminates=1
+PASS: callback-stop starts=1 waits=1 callbacks=1 releases=1 terminates=1
+PASS: wait-stop starts=1 waits=1 callbacks=0 releases=0 terminates=1
+PASS: restart starts=2 waits=72 callbacks=71 releases=71 terminates=2
+PASS: invalid starts=1 waits=57 callbacks=0 releases=0 terminates=1
+PASS: invalid-nv12 starts=1 waits=45 callbacks=0 releases=0 terminates=1
+PASS: nv12 starts=1 waits=41 callbacks=41 releases=41 terminates=1
+PASS: vsync-disabled starts=1 waits=0 callbacks=3 releases=3 terminates=1
+PASS: self-stop starts=1 waits=38 callbacks=38 releases=38 terminates=1
+

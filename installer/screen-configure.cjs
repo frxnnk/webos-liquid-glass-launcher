@@ -140,11 +140,26 @@ async function configureOnTV(options,deps){
     if(output(checked)||!after||!ownWiz(after,lamps)||after.device.lamps.some(function(lamp,i){var expected=config.device.lamps[i];return lamp.name!==expected.name||lamp.ipAddress!==expected.ipAddress||lamp.macAddress!==expected.macAddress;})||after.leds.some(function(led,i){return ['hmin','hmax','vmin','vmax'].some(function(key){return led[key]!==config.leds[i][key];});})||after.general.disableLedsStartup!==true||!after.network||after.network.apiAuth!==true||after.network.localAdminAuth!==true)throw Error('SCREEN_CONFIG_UNCONFIRMED');
     if(permission.outbound.indexOf('*')===-1&&permission.outbound.indexOf('org.webosbrew.piccap.service')===-1){permission.outbound.push('org.webosbrew.piccap.service');var temporary=ROLE+'.mi-pantalla-'+crypto.randomBytes(8).toString('hex');fresh(temporary,role);fs.chmodSync(temporary,420);fs.renameSync(temporary,ROLE);await exec('/usr/sbin/ls-control',['scan-services']);}
     var previous=read(SERVICE+'/screen-config.json',8192,true);if(previous!==screenText||previous!==null&&JSON.parse(previous).token!==credentials.previousToken)throw Error('SCREEN_EXISTING_CONFIGURATION');
-    save(SERVICE+'/screen-config.json',{enabled:true,token:credentials.token,profile:PROFILE,hardwareVerified:options.hardwareConfirmed===true||previous!==null&&JSON.parse(previous).hardwareVerified===true});
     var piccap=Object.assign({},settings,{address:'127.0.0.1',port:19400,'unix-socket':false,priority:150,width:320,height:180,fps:30,autostart:false});delete piccap.returnValue;
-    await luna('luna://org.webosbrew.piccap.service/setSettings',piccap);
+    try{
+      await luna('luna://org.webosbrew.piccap.service/setSettings',piccap);
+    }finally{
+      // The native setter restarts capture even with autostart:false. Cleanup this owned mutation,
+      // including an uncertain setter response, and require actual OFF rather than only a stop ACK.
+      var captureStop=JSON.parse(await new Promise(function(resolve,reject){
+        cp.execFile('/usr/bin/luna-send',['-n','1','-f','luna://org.webosbrew.piccap.service/stop','{}'],
+          {encoding:'utf8',timeout:12000,maxBuffer:2097152},function(error,out){
+            if(error)reject(Error('SCREEN_PICCAP_STOP_UNCONFIRMED'));else resolve(String(out));
+          });
+      }));
+      if(!object(captureStop)||typeof captureStop.returnValue!=='boolean')throw Error('SCREEN_PICCAP_STOP_UNCONFIRMED');
+      var captureOff=await luna('luna://org.webosbrew.piccap.service/status',{});
+      if(captureOff.isRunning!==false||captureOff.uiRunning!==false||captureOff.videoRunning!==false||captureOff.connected!==false)throw Error('SCREEN_PICCAP_STOP_UNCONFIRMED');
+    }
     var selectedSettings=await luna('luna://org.webosbrew.piccap.service/getSettings',{});
     if(selectedSettings.address!=='127.0.0.1'||selectedSettings.port!==19400||selectedSettings.fps!==30)throw Error('SCREEN_PICCAP_UNCONFIRMED');
+    if(read(SERVICE+'/screen-config.json',8192,true)!==previous)throw Error('SCREEN_EXISTING_CONFIGURATION');
+    save(SERVICE+'/screen-config.json',{enabled:true,token:credentials.token,profile:PROFILE,hardwareVerified:options.hardwareConfirmed===true||previous!==null&&JSON.parse(previous).hardwareVerified===true});
     var stopped=deps.stopOwnService(fs,deps.kill,deps.pid);
     credentials.phase='configured';credentials.previousToken=null;save(credentialsFile,credentials);
     finish({ok:true,configured:true,hardwareVerified:options.hardwareConfirmed===true||previous!==null&&JSON.parse(previous).hardwareVerified===true,physicalProofPending:true,restartedService:stopped});

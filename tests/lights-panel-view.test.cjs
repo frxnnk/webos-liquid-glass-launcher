@@ -89,6 +89,22 @@ test('mode cards explain their source while screen stays gated and every existin
   assert.equal(p.flatten(p.fields['lights-controls']).filter(n=>n.className==='lights-chip lights-white').length,3);
   assert.deepEqual(p.client.calls.map(c=>c.method),['capabilities','discover']);p.mounted.close();
 });
+
+test('cold capture enables only explicit Start and labels readiness separately from confirmed frames',async()=>{
+  const p=panel();await p.open();await p.discover(lamps(1));p.mounted.controller.toggle('lamp-0');
+  p.mounted.controller.view.caps.screenSync=true;
+  const screen=p.flatten(p.fields['lights-controls']).find(n=>n.className==='lights-chip lights-mode'&&n.getAttribute('data-value')==='screen');
+  const cold={configured:true,available:true,ready:true,active:false,pending:false,captureStartReady:true,
+    configVerified:true,hardwareVerified:true,framesVerified:false,sourceFreshness:'unknown',reason:''};
+  let review=p.mounted.controller.screenStatus();p.client.calls.at(-1).resolve(cold);await review;
+  assert.equal(screen.disabled,false);assert.match(screen.textContent,/Lista para iniciar/);
+  assert.doesNotMatch(screen.textContent,/Cuadros confirmados/);
+  for(const patch of [{pending:true},{captureStartReady:false},{configVerified:false},{reason:'capture-not-ready'}]){
+    review=p.mounted.controller.screenStatus();p.client.calls.at(-1).resolve(Object.assign({},cold,patch));await review;
+    assert.equal(screen.disabled,true,JSON.stringify(patch));
+  }
+  assert.equal(p.client.calls.some(call=>call.method==='setMode'),false,'reviews never start the capture');p.mounted.close();
+});
 test('a focused lamp survives a ten-device redraw, scrolls locally and Back returns to Luces without requests',async()=>{
   const p=panel();await p.open();await p.discover(lamps(10));
   let devices=p.fields['lights-list'].children;devices[8].focus();devices[8].listeners.click();

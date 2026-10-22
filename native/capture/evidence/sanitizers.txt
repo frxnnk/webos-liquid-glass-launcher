@@ -1,0 +1,10 @@
+Command: SANITIZE=address sh native/capture/run-tests.sh
+Exit: 0
+All ten scenarios passed with AddressSanitizer and UndefinedBehaviorSanitizer.
+No sanitizer finding was emitted.
+
+Command: SANITIZE=thread sh native/capture/run-tests.sh
+Exit: 1 before the first test.
+FATAL: ThreadSanitizer: unexpected memory mapping 0x75eadea72000-0x75eadef00000
+ThreadSanitizer is not accredited on this WSL runtime. No environment or ASLR
+change was made to bypass this failure. This is not a clean TSan result.

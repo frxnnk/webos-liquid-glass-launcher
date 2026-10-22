@@ -68,7 +68,8 @@ function baselineOf(result, ids) {
   });
 }
 function verified(report) {
-  return report && report.ready === true && report.hardwareVerified === true && report.framesVerified === true &&
+  return report && report.ready === true && report.hardwareVerified === true &&
+    (report.framesVerified === true || report.captureStartReady === true) &&
     report.configVerified === true && report.active === false;
 }
 
@@ -128,7 +129,12 @@ function create(options) {
         }).then(function (ack) {
           if (!ack || ack.active !== true) throw failure('SCREEN_START_UNCONFIRMED');
           record.phase = 'active';
-          save(record);
+          try { save(record); } catch (error) {
+            // The prepared baseline remains durable; stop output without restoring or clearing it.
+            return Promise.resolve().then(function () { return backend.stop(selected.slice()); }).then(function () {
+              throw error;
+            },function () { throw error; });
+          }
           return {active:true, pending:true, phase:'active'};
         });
       });
@@ -159,7 +165,12 @@ function create(options) {
     return exclusive(function () {
       var record = pending();
       if (!record) return {active:false, pending:false};
-      return Promise.resolve().then(function () { return backend.stop(record.ids.slice()); }).catch(function () {
+      return Promise.resolve().then(function () { return backend.stop(record.ids.slice()); }).catch(function (error) {
+        if (error && error.code === 'PICCAP_RECOVERY_PENDING') {
+          var pendingError = failure('SCREEN_RECOVERY_PENDING');
+          pendingError.message = 'La captura conserva un inicio incierto; hace falta la recuperación verificada.';
+          throw pendingError;
+        }
         throw failure('SCREEN_STOP_UNCONFIRMED');
       }).then(function (ack) {
         if (!ack || ack.active !== false) throw failure('SCREEN_STOP_UNCONFIRMED');

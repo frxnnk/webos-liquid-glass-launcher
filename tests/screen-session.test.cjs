@@ -226,7 +226,8 @@ test('a persistence failure after start acknowledgement retains prepared recover
   await assert.rejects(t.session.start([a]),error=>error.code==='SCREEN_PERSIST_FAILED'&&!error.message.includes('secret'));
   assert.equal(t.record().phase,'prepared');
   assert.equal(t.events.filter(e=>e[0]==='start').length,1);
-  assert.equal(t.events.some(e=>e[0]==='write'||e[0]==='stop'),false);
+  assert.equal(t.events.some(e=>e[0]==='write'),false);
+  assert.equal(t.events.filter(e=>e[0]==='stop').length,1);
   await t.restart().stop();
   assert.equal(t.record(),null);
 });

@@ -25,12 +25,13 @@ test('configuration script is compatible JavaScript and has a finite deadline',(
 function fixture(options={}){
   const root='/var/lib/mipantalla-maintenance/screen',service='/media/developer/apps/usr/palm/services/com.frxn.mipantalla.lights';
   const entries=new Map(),events=[],rpcOptions=[],ids=Array.from({length:6},(_,i)=>'wiz-'+(i+1).toString(16).padStart(12,'0'));
-  let sequence=0,password='hyperhdr',userToken='PRIVATE_USER_TOKEN_'+('a'.repeat(64)),friendly=options.historicOwn?'Mi pantalla WiZ Living':'Default',output=options.active===true;
+  let watchdog,sequence=0,password='hyperhdr',userToken='PRIVATE_USER_TOKEN_'+('a'.repeat(64)),friendly=options.historicOwn?'Mi pantalla WiZ Living':'Default',output=options.active===true;
   let config={general:{disableLedsStartup:false},device:{type:options.foreign?'wiz':'file'},network:{apiAuth:true,localAdminAuth:true},flatbufServer:{enable:true,port:19400},smoothing:{enable:true},leds:[]};
   if(options.historicOwn){const order=[1,5,0,3,2,4];config.device={type:'wiz',dimming:71,lamps:order.map((index,i)=>({name:'Original '+i,macAddress:ids[index].slice(4).match(/../g).join(':').toUpperCase(),ipAddress:'192.168.50.'+(index+30)}))};config.leds=order.map((index,i)=>({hmin:i/6,hmax:(i+1)/6,vmin:0.1,vmax:0.9}));config.smoothing={enable:true,time_ms:225,updateFrequency:40};config.network.localAdminAuth=false;}
   if(options.wrongIdentity)config.device.lamps[0].macAddress='FF:FF:FF:FF:FF:FF';
   if(options.badLayout)config.leds[0].hmax=config.leds[0].hmin;
   let settings={address:'',port:19400,fps:30};
+  let capture={isRunning:false,uiRunning:false,videoRunning:false,connected:false};
   function put(file,text,mode=384,dir=false){entries.set(file,{text,mode,dir,ino:++sequence});}
   put('/etc/starfish-release','Rockhopper release 5.6.2-21 (jhericurl-jimna)\n');
   put('/media/developer/apps/usr/palm/applications/com.frxn.mipantalla/lights-config.js','window.LAUNCHER_LIGHTS = '+JSON.stringify({selectedIds:ids})+';');
@@ -47,7 +48,9 @@ function fixture(options={}){
     if(uri.endsWith('/getSystemInfo'))Object.assign(value,{modelName:'49UN7310PSC',firmwareVersion:'04.64.00',sdkVersion:'5.6.2',boardType:'K6LP_ATSC_BR'});
     else if(uri.endsWith('/getState'))value.devices=ids.map((id,i)=>({id,ip:'192.168.50.'+(i+30),reachable:true,capabilities:{rgb:true},state:{on:true}}));
     else if(uri.endsWith('/getSettings'))Object.assign(value,settings);
-    else if(uri.endsWith('/setSettings')){settings=payload;events.push('piccap');}
+    else if(uri.endsWith('/setSettings')){settings=payload;events.push('piccap');capture={isRunning:true,uiRunning:true,videoRunning:true,connected:true};if(options.expireDuringSetter)watchdog();if(options.setterRejected)value.returnValue=false;}
+    else if(uri==='luna://org.webosbrew.piccap.service/stop'){events.push('piccap:stop');if(!options.stopUnconfirmed)capture={isRunning:false,uiRunning:false,videoRunning:false,connected:false};else value.returnValue=false;}
+    else if(uri==='luna://org.webosbrew.piccap.service/status')Object.assign(value,capture);
     else if(uri.endsWith('/status'))value.running=false;
     else if(uri.endsWith('/start')){events.push('daemon:start');options.offline=false;if(options.rotateToken)userToken='PRIVATE_USER_TOKEN_'+crypto.randomBytes(32).toString('hex');}
     else assert.fail('unexpected service '+uri);
@@ -70,8 +73,37 @@ function fixture(options={}){
     return{success:true,tan:request.tan,info};
   }
   const network={createConnection(endpoint){assert.deepEqual(endpoint,{host:'127.0.0.1',port:19444});const socket=new EventEmitter();socket.write=line=>{const value=hyper(JSON.parse(line));queueMicrotask(()=>value===null?socket.emit('close'):socket.emit('data',Buffer.from(JSON.stringify(value)+'\n')));};socket.destroy=()=>{};queueMicrotask(()=>options.offline?socket.emit('error',Error('offline')):socket.emit('connect'));return socket;}};
-  return{entries,events,rpcOptions,root,service,get config(){return config;},get userToken(){return userToken;},async run(options={}){let result;await require('../installer/screen-configure.cjs').configureOnTV(options,{fs:filesystem,net:network,crypto,cp:{execFile:luna},pid:1,getuid:()=>0,kill(){assert.fail('no process matched');},stopOwnService:require('../installer/screen-elevate.cjs').stopOwnService,output:value=>{result=value;}});return result;}};
+  return{entries,events,rpcOptions,root,service,get config(){return config;},get capture(){return capture;},get userToken(){return userToken;},async run(runOptions={}){let result;
+    const original=require('../installer/screen-configure.cjs').configureOnTV;
+    const configure=options.expireDuringSetter?new Function('setTimeout','clearTimeout','return ('+original.toString()+');')((fn,ms)=>{if(ms===18000){watchdog=fn;return null;}return setTimeout(fn,ms===300?0:ms);},clearTimeout):original;
+    await configure(runOptions,{fs:filesystem,net:network,crypto,cp:{execFile:luna},pid:1,getuid:()=>0,kill(){assert.fail('no process matched');},stopOwnService:require('../installer/screen-elevate.cjs').stopOwnService,output:value=>{result=value;}});return result;}};
 }
+
+test('preparation stops the capture that the native settings setter starts despite autostart false',async()=>{
+  const f=fixture(),result=await f.run();assert.equal(result.ok,true);assert.equal(result.configured,true);
+  assert.deepEqual(f.capture,{isRunning:false,uiRunning:false,videoRunning:false,connected:false});
+  assert.equal(f.events.filter(e=>e==='piccap:stop').length,1);
+});
+test('an unconfirmed capture stop cannot report configured or finalize its credentials',async()=>{
+  const f=fixture({stopUnconfirmed:true}),result=await f.run();assert.equal(result.ok,false);
+  assert.notEqual(result.configured,true);assert.equal(JSON.parse(f.entries.get(f.root+'/credentials.json').text).phase,'prepared');
+  assert.equal(f.entries.has(f.service+'/screen-config.json'),false);
+});
+test('a rejected settings response still stops capture after the owned setter was dispatched',async()=>{
+  const f=fixture({setterRejected:true}),result=await f.run();assert.equal(result.ok,false);
+  assert.deepEqual(f.capture,{isRunning:false,uiRunning:false,videoRunning:false,connected:false});
+  assert.equal(f.events.filter(e=>e==='piccap:stop').length,1);
+  assert.equal(f.entries.has(f.service+'/screen-config.json'),false);
+});
+
+for(const stopUnconfirmed of [false,true])test('deadline during native settings still attempts one stop without publishing runtime configuration: '+stopUnconfirmed,async()=>{
+  const f=fixture({expireDuringSetter:true,stopUnconfirmed}),result=await f.run();
+  assert.deepEqual(result,{ok:false,code:'SCREEN_CONFIGURATION_TIMEOUT'});
+  assert.equal(f.events.filter(e=>e==='piccap:stop').length,1);
+  assert.equal(f.entries.has(f.service+'/screen-config.json'),false);
+  assert.equal(JSON.parse(f.entries.get(f.root+'/credentials.json').text).phase,'prepared');
+  assert.deepEqual(f.capture,{isRunning:stopUnconfirmed,uiRunning:stopUnconfirmed,videoRunning:stopUnconfirmed,connected:stopUnconfirmed});
+});
 test('new configuration persists recovery before password changes and never touches lamp output',async()=>{
   const f=fixture(),result=await f.run({hardwareConfirmed:true});assert.equal(result.ok,true);assert.equal(result.hardwareVerified,true);assert.equal(f.config.network.localAdminAuth,true);assert.equal(f.config.network.apiAuth,true);
   const credentials=JSON.parse(f.entries.get(f.root+'/credentials.json').text);assert.equal(credentials.phase,'configured');assert.ok(credentials.token.length>36);assert.equal(f.entries.get(f.root+'/credentials.json').mode,384);assert.equal(f.config.general.disableLedsStartup,true);
@@ -100,7 +132,8 @@ test('a disconnect after load-db is insufficient without exact post-restart read
 test('cold six-lamp discovery gets twelve seconds while unrelated Luna calls retain six',async()=>{
   const f=fixture();assert.equal((await f.run()).ok,true);
   assert.equal(f.rpcOptions.find(call=>call.uri.endsWith('/getState')).timeout,12000);
-  assert.ok(f.rpcOptions.filter(call=>!call.uri.endsWith('/getState')).every(call=>call.timeout===6000));
+  assert.ok(f.rpcOptions.filter(call=>!call.uri.endsWith('/getState')&&!call.uri.endsWith('piccap.service/stop')).every(call=>call.timeout===6000));
+  assert.equal(f.rpcOptions.find(call=>call.uri.endsWith('piccap.service/stop')).timeout,12000);
   assert.ok(f.rpcOptions.every(call=>call.maxBuffer===2097152));
   const source=require('../installer/screen-configure.cjs').configureScript({});assert.match(source,/18000\)/);
 });

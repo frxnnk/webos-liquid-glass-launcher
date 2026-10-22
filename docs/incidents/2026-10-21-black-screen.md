@@ -2,6 +2,11 @@
 
 **2026-10-21 · Incidente abierto · 0.7.7 prerelease · Imagen y luces recuperadas; causa pendiente.**
 
+Actualización: se instaló la [candidata experimental 0.7.8](../capture-repair.md), con un
+parche nativo probado fuera de la TV y captura apagada. Se verificó la preparación en esta
+unidad, pero la nueva secuencia video → Manual → Home sigue pendiente. El incidente no se
+considera cerrado ni se atribuye su causa al defecto local sin prueba adicional.
+
 Ocurrió en la LG 49UN7310PSC de referencia, con webOS 5.6.2-21 y firmware 04.64.00.
 El dueño confirmó que las seis WiZ seguían los colores del video con 0.7.7. Después, al volver
 de YouTube mediante Home, la pantalla quedó negra y el problema persistió tras standby.
@@ -63,8 +68,9 @@ mostró `com.frxn.mipantalla`. Las capacidades informaron modo Manual. El dueño
 **que Mi pantalla se ve bien después de esta prueba**. No se midió latencia y esto no prueba
 Home con captura activa.
 
-Mientras siga abierto, no se deben repetir activaciones de captura ni añadir kills, factory
-reset o sysrq. No borrar el WAL para destrabar controles. La captura de video permanece apagada.
+Durante la recuperación no se repitieron activaciones ni se añadieron kills, factory reset
+o sysrq. No borrar el WAL para destrabar controles. La captura de video permanece apagada;
+una prueba nueva pertenece a la candidata revisada, no a una repetición de 0.7.7 sin cambios.
 
 La 0.7.7 se mantiene como **prerelease con este problema conocido**. No están acreditados la
 parada normal, la estabilidad al volver con Home con captura, la latencia ni una cura permanente.

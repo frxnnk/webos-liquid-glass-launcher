@@ -1,0 +1,11 @@
+After the initial lifetime fix, a new concurrent stop/start test failed:
+lifecycle: tests/lifecycle.c:105: main: Assertion `unicapture_start(&capture)==1' failed.
+The stopping guard was added only after observing that failure.
+
+The stale-FPS test then failed before the start reset:
+lifecycle: tests/lifecycle.c:103: main: Assertion `capture.metrics.framerate==0' failed.
+After adding only the start reset, it failed after join:
+lifecycle: tests/lifecycle.c:126: main: Assertion `capture.metrics.framerate==0' failed.
+The joined-stop reset was added after that separate failure. Both now pass.
+
+Line numbers describe the test body at the time of each RED, before later NV12 cases.

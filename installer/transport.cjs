@@ -4,6 +4,7 @@ const path = require('node:path');
 const cp = require('node:child_process');
 const LIMIT = 20 * 1024 * 1024;
 const DEADLINE = 20000;
+const MAX_DEADLINE = 25000;
 
 function validate(config, filesystem) {
   if (!config || typeof config !== 'object' || Array.isArray(config) ||
@@ -34,7 +35,7 @@ function createTransport(config, deps = {}) {
     'root@' + target.host, 'sh -s'];
   return {async runRemote(script, options = {}) {
     const timeoutMs = options.timeoutMs === undefined ? DEADLINE : options.timeoutMs;
-    if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > DEADLINE) throw Error('Límite de tiempo inválido.');
+    if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > MAX_DEADLINE) throw Error('Límite de tiempo inválido.');
     if (typeof script !== 'string' || !script.trim() || script.includes('\0') || Buffer.byteLength(script) > LIMIT) throw Error('Script local inválido.');
     const input = script.replace(/\r\n/g, '\n');
     return new Promise((resolve, reject) => {

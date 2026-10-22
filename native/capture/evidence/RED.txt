@@ -1,0 +1,10 @@
+Local WSL Ubuntu x86_64; no TV actions.
+Command: sh native/capture/run-tests.sh upstream
+The final harness was run against the unchanged pinned source before production edits.
+Exit: 1
+callbacks=2 releases=1 terminates=1 lifetime_violations=3
+FAIL: backend invalidated a frame during consumption
+
+The backend invalidation happens during the real unicapture callback lifetime.
+This proves a local concurrency/lifetime defect in the upstream capture loop.
+It does not identify the cause of the TV kernel stall.

@@ -5,7 +5,7 @@ const {createScreenController,normalize}=require('../installer/screen-controller
 const {script,remoteScreen}=require('../installer/screen-remote.cjs');
 const target={host:'192.168.50.12',identity:'C:\\example\\tv-key'};
 function ready(extra={}){return Object.assign({ok:true,verified:true,missing:[],conflicts:[],configured:true,ready:true,active:false,pending:false,framesVerified:true,hardwareVerified:true,configVerified:true,lampCount:6,reason:''},extra);}
-function controller(responses,deps={}){const actions=[];return{actions,client:createScreenController(Object.assign({createTransport(){return{async runRemote(text){actions.push(/"action":"([^"]+)"/.exec(text)[1]);const value=responses.shift();if(value instanceof Error)throw value;return{stdout:JSON.stringify(value)};}};}},deps))};}
+function controller(responses,deps={}){const actions=[],timeouts=[];return{actions,timeouts,client:createScreenController(Object.assign({createTransport(){return{async runRemote(text,options){actions.push(/"action":"([^"]+)"/.exec(text)[1]);timeouts.push(options.timeoutMs);const value=responses.shift();if(value instanceof Error)throw value;return{stdout:JSON.stringify(value)};}};}},deps))};}
 test('status reports a confirmed missing pipeline without claiming lamps are off',async()=>{
   const {client}=controller([ready({missing:['piccap','hyperhdr','screen-config'],ready:false,active:null,framesVerified:false,configVerified:false,hardwareVerified:false})]);
   const value=await client.status(target);assert.equal(value.capture.verified,true);assert.equal(value.capture.available,false);assert.equal(value.lights.active,null);assert.equal(value.canPrepare,true);assert.equal(value.canStop,false);
@@ -14,9 +14,35 @@ test('fresh frames alone do not enable start',async()=>{
   const {client,actions}=controller([ready({hardwareVerified:false})]);const value=await client.start(target);
   assert.equal(value.status,'blocked');assert.deepEqual(actions,['status']);
 });
+
+test('an owned cold capture enables explicit start without promoting frames to verified',async()=>{
+  const cold=ready({framesVerified:false,captureStartReady:true});
+  const state=normalize('status',cold);
+  assert.equal(state.capture.available,true);assert.equal(state.capture.captureStartReady,true);
+  assert.equal(state.capture.framesVerified,false);assert.match(state.summary,/lista para iniciar/);
+  const {client,actions}=controller([cold,ready({ready:false,active:true,pending:true})]);
+  assert.equal((await client.start(target)).status,'complete');assert.deepEqual(actions,['status','start']);
+});
+
+test('cold readiness cannot bypass unknown capture, authorization, hardware or pending recovery',()=>{
+  for(const patch of [{captureStartReady:false},{captureStartReady:'true'},{captureStartReady:1},{captureStartReady:undefined},
+    {ready:false},{configured:false},{configVerified:false},{hardwareVerified:false},{active:null},{pending:null},
+    {pending:true},{reason:'auth-required'},{reason:'capture-not-ready'},{verified:false}]){
+    const value=normalize('status',ready(Object.assign({framesVerified:false,captureStartReady:true},patch)));
+    assert.equal(value.capture.available,false,JSON.stringify(patch));assert.equal(value.capture.framesVerified,false);
+  }
+  assert.equal(normalize('start',ready({active:true,pending:true,framesVerified:false,captureStartReady:true})).status,'partial',
+    'permission to start cannot substitute for frames after starting');
+});
 test('start delegates to the existing service and verifies the active session',async()=>{
   const {client,actions}=controller([ready(),ready({ready:false,active:true,pending:true,phase:'active'})]);
   const value=await client.start(target);assert.equal(value.status,'complete');assert.equal(value.canStop,true);assert.deepEqual(actions,['status','start']);
+});
+
+test('only start and stop use the explicit 25-second transport budget',async()=>{
+  const c=controller([ready(),ready({ready:false,active:true,pending:true}),ready(),ready()]);
+  await c.client.start(target);await c.client.stop(target);await c.client.status(target);
+  assert.deepEqual(c.actions,['status','start','stop','status']);assert.deepEqual(c.timeouts,[20000,25000,25000,20000]);
 });
 test('an acknowledgment without active readback remains partial',async()=>{
   const {client}=controller([ready(),ready({active:null,pending:true})]);const value=await client.start(target);assert.equal(value.status,'partial');assert.deepEqual(value.codes,['SCREEN_START_UNCONFIRMED']);

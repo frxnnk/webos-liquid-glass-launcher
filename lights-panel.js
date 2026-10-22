@@ -7,7 +7,7 @@
   var STORAGE_KEY = 'mi-pantalla-lights-living-v1';
   var ID = /^[A-Za-z0-9:._-]{1,64}$/;
   var TIMEOUT_MS = 8000;
-  var SCREEN_MODE_MS = 15000;
+  var SCREEN_MODE_MS = 25000;
   var DISCOVER_MS = 15000;
   var LEVELS = [10, 25, 50, 75, 100];
   var COLORS = [['Ámbar', [255, 150, 40]], ['Rojo', [255, 45, 55]], ['Rosa', [255, 85, 170]], ['Violeta', [150, 75, 255]], ['Azul', [45, 115, 255]], ['Verde', [40, 210, 115]]];
@@ -20,6 +20,7 @@
     'instance-mismatch': 'la instancia de captura no coincide.', 'profile-mismatch': 'el perfil de captura no coincide.',
     'selection-required': 'marcá las lámparas del living.', 'selection-mismatch': 'las lámparas no coinciden con el perfil de captura.',
     'frames-unverified': 'captura pendiente de verificar en esta TV.',
+    'capture-not-ready': 'no se pudo verificar que la captura esté lista para iniciar.',
     'hardware-unverified': 'la salida física de esta TV todavía no está verificada.',
     'output-in-use': 'la salida de luces está en uso.',
     'restore-pending': 'la restauración debe terminar antes de nuevos cambios.', 'busy': 'la captura está ocupada.',
@@ -54,28 +55,35 @@
   function unknownState() { return { on: null, brightness: null, rgb: null, temperature: null }; }
   function errorText(error) { return text(error && error.message ? error.message : String(error || ''), 120) || 'error del servicio'; }
   function emptyScreen(reason) {
-    return { configured: false, available: false, configVerified: false, framesVerified: false, hardwareVerified: false,
+    return { configured: false, available: false, configVerified: false, framesVerified: false, hardwareVerified: false, captureStartReady: false, pending: false,
       ready: false, active: false, sourceFreshness: 'unknown', reason: reason || 'setup-pending' };
   }
   function cleanScreen(raw) {
     var fields = ['configured', 'available', 'configVerified', 'framesVerified', 'hardwareVerified', 'ready', 'active'];
     if (!raw || typeof raw.reason !== 'string' || fields.some(function (key) { return typeof raw[key] !== 'boolean'; }) ||
+        (raw.captureStartReady !== undefined && typeof raw.captureStartReady !== 'boolean') ||
+        (raw.pending !== undefined && typeof raw.pending !== 'boolean') ||
         ['unknown', 'fresh'].indexOf(raw.sourceFreshness) === -1 ||
         (raw.reason !== '' && !Object.prototype.hasOwnProperty.call(SCREEN_REASONS, raw.reason))) return emptyScreen('protocol-error');
     var result = emptyScreen();
     fields.forEach(function (key) { result[key] = raw[key]; });
     result.sourceFreshness = raw.sourceFreshness;
     result.reason = raw.reason;
-    var verified = raw.reason === '' && raw.configured && raw.available && raw.configVerified && raw.framesVerified && raw.hardwareVerified && raw.sourceFreshness === 'fresh';
-    result.active = raw.active && verified;
-    result.ready = raw.ready && verified && !result.active;
+    var verified = raw.reason === '' && raw.configured && raw.available && raw.configVerified && raw.hardwareVerified;
+    var frames = raw.framesVerified && raw.sourceFreshness === 'fresh';
+    result.pending = raw.pending === true;
+    result.captureStartReady = raw.captureStartReady === true && verified && raw.pending === false && !raw.active && raw.outputEnabled !== true;
+    result.active = raw.active && verified && frames;
+    result.ready = raw.ready && verified && (frames || result.captureStartReady) && !result.active && !result.pending;
     return result;
   }
   function screenAllowed(view) {
-    return !!(view.caps && view.caps.screenSync && view.screen.ready && view.screen.hardwareVerified && view.screen.framesVerified);
+    return !!(view.caps && view.caps.screenSync && view.screen.ready && view.screen.configVerified && view.screen.hardwareVerified &&
+      (view.screen.framesVerified || view.screen.captureStartReady) && !view.screen.pending);
   }
   function screenNote(screen) {
     if (screen.active) return 'Activo: captura de pantalla confirmada.';
+    if (screen.ready && screen.captureStartReady && !screen.framesVerified) return 'Lista para iniciar captura; todavía no hay cuadros de video confirmados.';
     if (screen.ready) return 'Preparado: captura verificada; elegí Pantalla completa para activarla.';
     var reason = screen.reason || 'frames-unverified';
     var label = reason === 'setup-pending' ? 'Preparado' :
@@ -88,6 +96,7 @@
     var storage = options.storage || null;
     var setTimer = options.setTimer || setTimeout;
     var clearTimer = options.clearTimer || clearTimeout;
+    var now = options.now || Date.now;
     var onChange = options.onChange || function () {};
     var session = 0;
     var modeEpoch = 0;
@@ -188,15 +197,21 @@
       return call('setState', payload, TIMEOUT_MS).then(function (outcome) { if (outcome) merge(outcome, ids, verb); return !!outcome; });
     }
 
-    function reviewScreen(epoch, afterMode) {
+    function reviewScreen(epoch, afterMode, remainingMs) {
       view.screen = emptyScreen();
+      if (remainingMs !== undefined && remainingMs <= 0) {
+        view.screen = emptyScreen('timeout'); view.busy = '';
+        view.message = 'Modo confirmado; captura sin confirmar. Podés revisar la captura o volver a Manual.';
+        changed(); return Promise.resolve(false);
+      }
       start('Revisando la captura…');
-      return call('screenStatus', { ids: view.selected.slice() }, TIMEOUT_MS).then(function (outcome) {
+      return call('screenStatus', { ids: view.selected.slice() }, remainingMs === undefined ? TIMEOUT_MS : Math.min(TIMEOUT_MS, remainingMs)).then(function (outcome) {
         if (!outcome) return false;
         view.busy = '';
         if (epoch !== modeEpoch) { changed(); return false; }
         view.screen = outcome.timeout ? emptyScreen('timeout') : outcome.error ? emptyScreen('protocol-error') : cleanScreen(outcome.result);
         if (view.screen.active) confirmedMode('screen');
+        else if (view.mode === 'screen' && view.screen.ready && outcome.result && outcome.result.pending === false) confirmedMode('manual');
         view.message = afterMode && (outcome.timeout || outcome.error || view.screen.reason === 'protocol-error') ?
           'Modo confirmado; captura sin confirmar. Podés revisar la captura o volver a Manual.' : screenNote(view.screen);
         changed();
@@ -300,6 +315,7 @@
         var restoring = mode === 'manual' && view.mode === 'screen';
         if (view.phase !== 'ready' || view.busy || (!ids.length && !restoring) || !allowed) return Promise.resolve(false);
         var previousMode = view.mode;
+        var deadline = now() + SCREEN_MODE_MS;
         if (!stopLocalAmbient()) { changed(); return Promise.resolve(false); }
         var epoch = ++modeEpoch;
         modePending = true;
@@ -311,9 +327,13 @@
           if (!outcome) return false;
           view.busy = '';
           var ok = !!(outcome.result && outcome.result.mode === mode);
-          if (outcome.timeout && mode !== 'manual' && previousMode !== 'screen') view.mode = null;
+          if (!ok && (mode === 'screen' || mode === 'manual')) {
+            view.screen = emptyScreen(outcome.timeout ? 'timeout' : 'protocol-error');
+            if (mode === 'screen') view.mode = 'screen'; // recuperación posible; no afirma que haya video activo
+          }
+          if (outcome.timeout && mode === 'ambient' && previousMode !== 'screen') view.mode = null;
           else if (ok) confirmedMode(mode);
-          if (ok && (mode === 'screen' || mode === 'manual')) return reviewScreen(epoch, true).then(function () { return true; });
+          if (ok && (mode === 'screen' || mode === 'manual')) return reviewScreen(epoch, true, deadline - now()).then(function () { return true; });
           view.message = ok ? '' : outcome.timeout ? (mode === 'manual' && view.mode !== 'screen' ? 'El seguimiento local está detenido; el servicio no confirmó el modo a tiempo.' : 'Sin respuesta a tiempo: el modo actual es desconocido.') : 'El servicio no confirmó el cambio de modo' + (outcome.error ? ': ' + outcome.error : '') + '.';
           changed();
           return ok;
@@ -523,8 +543,8 @@
         var allowed = restoring ? ready && !view.busy : act && (item.kind !== 'mode' || item.value === 'manual' || (item.value === 'ambient' ? caps.wallpaperSync : screenAllowed(view)));
         item.node.disabled = !allowed;
         item.node.setAttribute('aria-pressed', current[item.kind] !== null && String(current[item.kind]) === String(item.value) ? 'true' : 'false');
-        if (item.detail) item.detail.textContent = current.mode === item.value ? 'Modo actual' : item.value === 'screen' ?
-          (screenAllowed(view) ? 'Verificado' : 'Sin verificar') : item.value === 'ambient' && !caps.wallpaperSync ? 'No disponible' : 'Disponible';
+        if (item.detail) item.detail.textContent = current.mode === item.value ? item.value === 'screen' && !view.screen.active ? 'Sin confirmar' : 'Modo actual' : item.value === 'screen' ?
+          (screenAllowed(view) ? view.screen.framesVerified ? 'Cuadros confirmados' : 'Lista para iniciar' : 'Sin verificar') : item.value === 'ambient' && !caps.wallpaperSync ? 'No disponible' : 'Disponible';
       });
       var notes = ['Acompañar fondo: solo la foto de Mi pantalla; no otras apps ni HDMI.'];
       if (!caps.wallpaperSync) notes.push('Acompañar fondo: pendiente del servicio de luces.');

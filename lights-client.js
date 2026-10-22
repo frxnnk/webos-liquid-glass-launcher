@@ -92,7 +92,7 @@
         var timer = setTimeout(function () {
           try { if (pending && pending.cancel) pending.cancel(); } catch (ignored) {}
           finish(new Error('No se pudo confirmar la respuesta de las luces.'));
-        }, options.timeoutMs || (method === 'setMode' && payload && (payload.mode === 'screen' || payload.mode === 'manual') ? 15000 : 12000));
+        }, options.timeoutMs || (method === 'setMode' && payload && (payload.mode === 'screen' || payload.mode === 'manual') ? 25000 : 12000));
         try {
           pending = sdk.service.request('luna://com.frxn.mipantalla.lights', {
             method:method,parameters:payload || {},

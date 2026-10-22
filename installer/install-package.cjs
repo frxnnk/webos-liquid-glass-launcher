@@ -2,7 +2,7 @@
 const fs=require('node:fs/promises');
 const path=require('node:path');
 const crypto=require('node:crypto');
-const PIN=Object.freeze({id:'com.frxn.mipantalla',version:'0.7.7',sha256:'dd107a1cf409d7348cf4efd04eb3de432afd129358701f57470c05485e2f1e17',url:'https://github.com/frxnnk/webos-liquid-glass-launcher/releases/download/v0.7.7/com.frxn.mipantalla_0.7.7_all.ipk'});
+const PIN=Object.freeze({id:'com.frxn.mipantalla',version:'0.7.8',sha256:'09cf04a51d5ebf9cfb51bd28dc43fc49700443e54aabb89a18846ae462547d60',url:'https://github.com/frxnnk/webos-liquid-glass-launcher/releases/download/v0.7.8/com.frxn.mipantalla_0.7.8_all.ipk'});
 function validInventory(value){
   if(!value||value.returnValue!==true||!Array.isArray(value.apps))return false;
   var seen=Object.create(null);
@@ -55,7 +55,7 @@ async function installPackage(transport,options,deps={}){
   if(options.expectedInstalledVersion!==null)throw Error('UPDATE_PRESERVATION_REQUIRED');
   const readFile=deps.readFile||fs.readFile;
   let bytes;
-  try{bytes=await readFile(path.join(__dirname,'..','artifacts','public-launcher','com.frxn.mipantalla_0.7.7_all.ipk'));}
+  try{bytes=await readFile(path.join(__dirname,'..','artifacts','public-launcher','com.frxn.mipantalla_0.7.8_all.ipk'));}
   catch(error){
     if(error.code!=='ENOENT')throw error;
     const response=await(deps.fetch||fetch)(PIN.url,{signal:AbortSignal.timeout(20000)});

@@ -17,12 +17,12 @@ function fixture(options={}){
   const devices=[{id:'org.webosbrew.piccap',version:'0.5.3'},{id:'org.webosbrew.hyperhdr.loader',version:'22.0.1'}];
   let phase=options.phase||null;
   function execFile(command,args,settings,callback){
-    const uri=args[args.length-2],payload=JSON.parse(args[args.length-1]);calls.push({command,uri,payload,args});
+    const uri=args[args.length-2],payload=JSON.parse(args[args.length-1]);calls.push({command,uri,payload,args,timeout:settings.timeout});
     let value;
     if(uri.endsWith('/getSystemInfo'))value={returnValue:true,modelName:'49UN7310PSC',firmwareVersion:'04.64.00',sdkVersion:'5.6.2',boardType:'K6LP_ATSC_BR'};
     else if(uri.endsWith('/listApps'))value={returnValue:true,apps:options.apps||devices};
     else if(uri.endsWith('/setMode')){assert.ok(args.includes('-a'));phase=payload.mode==='screen'?'active':null;value={returnValue:true,mode:payload.mode};}
-    else if(uri.endsWith('/screenStatus'))value={returnValue:true,configured:true,ready:!phase,pending:!!phase,phase,outputEnabled:phase==='active',configVerified:true,hardwareVerified:true,framesVerified:true,lampCount:6};
+    else if(uri.endsWith('/screenStatus'))value=Object.assign({returnValue:true,configured:true,ready:!phase,pending:!!phase,phase,outputEnabled:phase==='active',configVerified:true,hardwareVerified:true,framesVerified:true,lampCount:6},options.status);
     else throw Error('unexpected method');
     callback(null,JSON.stringify(value));
   }
@@ -32,6 +32,22 @@ test('remote start calls the existing app session and returns only sanitized sta
   const f=fixture(),value=await f.run('start');assert.equal(value.active,true);assert.equal(value.pending,true);assert.equal(value.framesVerified,true);
   const call=f.calls.find(call=>call.uri.endsWith('/setMode'));assert.deepEqual(call.payload.ids,ids);assert.equal(call.payload.mode,'screen');
   assert.equal(JSON.stringify(value).includes('PRIVATE_NOT_FOR_OUTPUT'),false);assert.equal(JSON.stringify(value).includes(ids[0]),false);
+});
+
+test('remote forwards only a strict cold-start flag and never invents verified frames',async()=>{
+  for(const flag of [true,false,1,'true',undefined]){
+    const f=fixture({status:{captureStartReady:flag,framesVerified:false}}),value=await f.run('status');
+    assert.equal(value.captureStartReady,flag===true);assert.equal(value.framesVerified,false);
+    assert.equal(JSON.stringify(value).includes(ids[0]),false);
+    assert.equal(f.calls.some(call=>call.uri.endsWith('/setMode')),false);
+  }
+});
+
+test('remote grants the longer deadline only to explicit screen and Manual mutations',async()=>{
+  const f=fixture();await f.run('start');
+  const mode=f.calls.find(call=>call.uri.endsWith('/setMode'));
+  assert.equal(mode.timeout,25000);
+  assert.ok(f.calls.filter(call=>!call.uri.endsWith('/setMode')).every(call=>call.timeout===12000));
 });
 test('remote stop restores via Manual and reads the selected six lamps afterward',async()=>{
   const f=fixture({phase:'active'}),value=await f.run('stop');assert.equal(value.active,false);assert.equal(value.pending,false);

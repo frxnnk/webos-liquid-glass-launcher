@@ -35,7 +35,7 @@ with tarfile.open(fileobj=io.BytesIO(parts['data.tar.gz']), mode='r:gz') as arch
     service_id = info['id'] + '.lights'
     service_prefix = 'usr/palm/services/' + service_id + '/'
     service_files = {'api.js', 'controller.js', 'protocol.js', 'service.js', 'transport.js', 'package.json', 'services.json',
-                     'hyperhdr-rpc.js', 'piccap-probe.js', 'screen-backend.js', 'screen-control.js', 'screen-session.js',
+                     'hyperhdr-rpc.js', 'piccap-probe.js', 'piccap-lifecycle.js', 'screen-backend.js', 'screen-control.js', 'screen-session.js',
                      'screen-settings.js', 'screen-store.js', 'home-autostart.sh', 'home-input.js', 'home-watch.js', 'home-power.js'}
     if (root / 'services' / service_id / 'screen-config.json').is_file():
         service_files.add('screen-config.json')

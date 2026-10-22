@@ -142,7 +142,7 @@ module.exports = function createBackend(options) {
         return status;
       });
     },
-    start:function (ids) {
+    start:function (ids, operation) {
       var issued = false;
       return use(function (session) {
         return check(session,ids).then(function (checked) {
@@ -152,6 +152,7 @@ module.exports = function createBackend(options) {
           return Promise.resolve().then(options.probe).catch(function () { throw failure('frames-unverified'); });
         }).then(function (frames) {
           if (!frames || frames.framesVerified !== true) throw failure('frames-unverified');
+          if (operation && typeof operation.canContinue === 'function' && operation.canContinue() !== true) throw failure('timeout');
           issued = true;
           return setOutput(session,true);
         }).catch(function (error) {

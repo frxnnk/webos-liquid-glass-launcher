@@ -1,0 +1,258 @@
+--- a/unicapture/unicapture.c
++++ b/unicapture/unicapture.c
+@@ -99,30 +99,12 @@
+     return -1;
+ }
+ 
+-void* unicapture_vsync_handler(void* data)
+-{
+-    unicapture_state_t* this = (unicapture_state_t*)data;
+-
+-    INFO("vsync thread starting...");
+-
+-    while (this->vsync_thread_running) {
+-        if (this->vsync && this->video_capture_running && this->video_capture->wait) {
+-            if ((this->video_capture->wait(this->video_capture->state)) == -99) { // stop video capture (will be started again in unicapture_run())
+-                INFO("Stopping video capture.");
+-                this->video_capture->terminate(this->video_capture->state);
+-                this->video_capture_running = false;
+-            }
+-        } else {
+-            usleep(1000000 / (this->fps == 0 ? 30 : this->fps));
+-        }
+-        pthread_mutex_lock(&this->vsync_lock);
+-        pthread_cond_signal(&this->vsync_cond);
+-        pthread_mutex_unlock(&this->vsync_lock);
+-    }
+-
+-    INFO("vsync thread finished");
+-
+-    return NULL;
++static bool capture_running(unicapture_state_t* state)
++{
++    pthread_mutex_lock(&state->state_lock);
++    bool running = state->running;
++    pthread_mutex_unlock(&state->state_lock);
++    return running;
+ }
+ 
+ void* unicapture_run(void* data)
+@@ -144,9 +126,6 @@
+     converter_init(&ui_converter);
+     converter_init(&video_converter);
+     converter_init(&final_converter);
+-
+-    pthread_mutex_init(&this->vsync_lock, NULL);
+-    pthread_cond_init(&this->vsync_cond, NULL);
+ 
+     frame_info_t blended_frame = { PIXFMT_INVALID };
+     frame_info_t final_frame = { PIXFMT_INVALID };
+@@ -154,10 +133,7 @@
+     uint8_t* blend_alpha_y = NULL;
+     size_t blend_alpha_y_capacity = 0;
+ 
+-    this->vsync_thread_running = true;
+-    pthread_create(&this->vsync_thread, NULL, unicapture_vsync_handler, this);
+-
+-    while (this->running) {
++    while (capture_running(this)) {
+         uint64_t now = getticks_us();
+ 
+         if ((now - last_ui_start) > 1000000 && ui_capture != NULL && !this->ui_capture_running) {
+@@ -165,7 +141,9 @@
+             DBG("Attempting UI capture init...");
+             if (ui_capture->start(ui_capture->state) == 0) {
+                 INFO("UI capture started");
++                pthread_mutex_lock(&this->state_lock);
+                 this->ui_capture_running = true;
++                pthread_mutex_unlock(&this->state_lock);
+             }
+         }
+ 
+@@ -174,16 +152,30 @@
+             DBG("Attempting video capture init...");
+             if (video_capture->start(video_capture->state) == 0) {
+                 INFO("Video capture started");
++                pthread_mutex_lock(&this->state_lock);
+                 this->video_capture_running = true;
++                pthread_mutex_unlock(&this->state_lock);
+             }
+         }
+ 
+         int ret = 0;
+         uint64_t frame_start = getticks_us();
+ 
+-        pthread_mutex_lock(&this->vsync_lock);
+-        pthread_cond_wait(&this->vsync_cond, &this->vsync_lock);
+-        pthread_mutex_unlock(&this->vsync_lock);
++        // One thread owns the backend and borrowed frame through release_frame.
++        // In particular, wait() may mutate driver state and must not overlap
++        // acquire/conversion/callback or terminate/reinitialization.
++        if (this->vsync && this->video_capture_running && video_capture->wait) {
++            if (video_capture->wait(video_capture->state) == -99) {
++                INFO("Stopping video capture.");
++                video_capture->terminate(video_capture->state);
++                pthread_mutex_lock(&this->state_lock);
++                this->video_capture_running = false;
++                pthread_mutex_unlock(&this->state_lock);
++            }
++        } else {
++            usleep(1000000 / (this->fps == 0 ? 30 : this->fps));
++        }
++        if (!capture_running(this)) break;
+         uint64_t frame_wait = getticks_us();
+ 
+         frame_info_t ui_frame = { PIXFMT_INVALID };
+@@ -343,11 +335,11 @@
+             INFO("Buffer dumped to: %s", filename);
+         }
+ 
+-        if (this->callback != NULL && (target_format == PIXFMT_RGB || target_format == PIXFMT_ARGB)) {
++        if (got_frame && this->callback != NULL && (target_format == PIXFMT_RGB || target_format == PIXFMT_ARGB)) {
+             this->callback(this->callback_data, final_frame.width, final_frame.height, final_frame.planes[0].buffer);
+         }
+ 
+-        if (this->callback_nv12 != NULL && target_format == PIXFMT_YUV420_SEMI_PLANAR) {
++        if (got_frame && this->callback_nv12 != NULL && target_format == PIXFMT_YUV420_SEMI_PLANAR) {
+             this->callback_nv12(this->callback_data, final_frame.width, final_frame.height, final_frame.planes[0].buffer,
+                 final_frame.planes[1].buffer, final_frame.planes[0].stride, final_frame.planes[1].stride);
+         }
+@@ -369,7 +361,9 @@
+ 
+             if (framecounter % 60 == 0) {
+                 double fps = (60 * 1000000.0) / (getticks_us() - framecounter_start);
++                pthread_mutex_lock(&this->state_lock);
+                 this->metrics.framerate = fps;
++                pthread_mutex_unlock(&this->state_lock);
+                 DBG("Framerate: %.6f FPS; timings - wait: %lldus, acquire: %lldus, convert: %lldus, process; %lldus, send: %lldus, release: %lldus",
+                     fps, frame_wait - frame_start, frame_acquired - frame_wait, frame_converted - frame_acquired, frame_processed - frame_converted, frame_sent - frame_processed, frame_released - frame_sent);
+ 
+@@ -385,22 +379,20 @@
+ 
+     INFO("Shutting down...");
+ 
+-    if (this->vsync_thread_running) {
+-        DBG("Waiting for vsync thread to finish...");
+-        this->vsync_thread_running = false;
+-        pthread_join(this->vsync_thread, NULL);
+-    }
+-
+     if (this->ui_capture_running) {
+         DBG("Terminating UI capture...");
+         ui_capture->terminate(ui_capture->state);
++        pthread_mutex_lock(&this->state_lock);
+         this->ui_capture_running = false;
++        pthread_mutex_unlock(&this->state_lock);
+     }
+ 
+     if (this->video_capture_running) {
+         DBG("Terminating Video capture...");
+         video_capture->terminate(video_capture->state);
++        pthread_mutex_lock(&this->state_lock);
+         this->video_capture_running = false;
++        pthread_mutex_unlock(&this->state_lock);
+     }
+ 
+     for (int i = 0; i < MAX_PLANES; i++) {
+@@ -423,29 +415,51 @@
+ void unicapture_init(unicapture_state_t* this)
+ {
+     memset(this, 0, sizeof(unicapture_state_t));
++    pthread_mutex_init(&this->state_lock, NULL);
+     this->vsync = true;
+ }
+ 
+ int unicapture_start(unicapture_state_t* this)
+ {
+-    if (this->running) {
++    pthread_mutex_lock(&this->state_lock);
++    if (this->running || this->stopping) {
++        pthread_mutex_unlock(&this->state_lock);
+         return 1;
+     }
+ 
+     this->running = true;
+-    pthread_create(&this->main_thread, NULL, unicapture_run, this);
++    this->metrics.framerate = 0;
++    int result = pthread_create(&this->main_thread, NULL, unicapture_run, this);
++    if (result != 0) this->running = false;
++    pthread_mutex_unlock(&this->state_lock);
++    if (result != 0) return -1;
+ 
+     return 0;
+ }
+ 
+ int unicapture_stop(unicapture_state_t* this)
+ {
++    pthread_mutex_lock(&this->state_lock);
+     if (!this->running) {
++        pthread_mutex_unlock(&this->state_lock);
+         return 1;
+     }
++    if (pthread_equal(pthread_self(), this->main_thread)) {
++        pthread_mutex_unlock(&this->state_lock);
++        return -1;
++    }
+ 
+     this->running = false;
+-    pthread_join(this->main_thread, NULL);
+-
+-    return 0;
+-}
++    this->stopping = true;
++    pthread_t owner = this->main_thread;
++    pthread_mutex_unlock(&this->state_lock);
++    int result = pthread_join(owner, NULL);
++    pthread_mutex_lock(&this->state_lock);
++    if (result == 0) {
++        this->stopping = false;
++        this->metrics.framerate = 0;
++    }
++    pthread_mutex_unlock(&this->state_lock);
++
++    return result == 0 ? 0 : -1;
++}
+--- a/unicapture/unicapture.h
++++ b/unicapture/unicapture.h
+@@ -87,15 +87,14 @@
+     pixel_format_t target_format;
+ 
+     bool running;
++    bool stopping;
+     pthread_t main_thread;
+ 
+     bool ui_capture_running;
+     bool video_capture_running;
+ 
+-    bool vsync_thread_running;
+-    pthread_t vsync_thread;
+-    pthread_mutex_t vsync_lock;
+-    pthread_cond_t vsync_cond;
++    // Protects public status and the stop request, never a backend call.
++    pthread_mutex_t state_lock;
+ 
+     unicapture_imagedata_callback_t callback;
+     unicapture_imagedata_nv12_callback_t callback_nv12;
+--- a/src/service.c
++++ b/src/service.c
+@@ -172,6 +172,7 @@
+ int service_destroy(service_t* service)
+ {
+     service_stop(service);
++    pthread_mutex_destroy(&service->unicapture.state_lock);
+     return 0;
+ }
+ 
+@@ -262,10 +263,12 @@
+     jobject_set(jobj, j_cstr_to_buffer("isRunning"), jboolean_create(service->running));
+     jobject_set(jobj, j_cstr_to_buffer("connected"), jboolean_create(service->connected));
+     jobject_set(jobj, j_cstr_to_buffer("videoBackend"), service->video_backend.name ? jstring_create(service->video_backend.name) : jnull());
++    pthread_mutex_lock(&service->unicapture.state_lock);
+     jobject_set(jobj, j_cstr_to_buffer("videoRunning"), jboolean_create(service->unicapture.video_capture_running));
+     jobject_set(jobj, j_cstr_to_buffer("uiBackend"), service->ui_backend.name ? jstring_create(service->ui_backend.name) : jnull());
+     jobject_set(jobj, j_cstr_to_buffer("uiRunning"), jboolean_create(service->unicapture.ui_capture_running));
+     jobject_set(jobj, j_cstr_to_buffer("framerate"), jnumber_create_f64(service->unicapture.metrics.framerate));
++    pthread_mutex_unlock(&service->unicapture.state_lock);
+ 
+     LSMessageReply(sh, msg, jvalue_tostring_simple(jobj), &lserror);
+ 

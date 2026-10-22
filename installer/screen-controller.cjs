@@ -2,9 +2,11 @@
 const remote=require('./screen-remote.cjs');
 function normalize(action, observed){
   const verified=observed&&observed.ok===true&&observed.verified===true;
-  const active=verified&&typeof observed.active==='boolean'?observed.active:null;
+  const framesVerified=verified&&observed.framesVerified===true,hardwareVerified=verified&&observed.hardwareVerified===true,configVerified=verified&&observed.configVerified===true;
+  const active=verified&&typeof observed.active==='boolean'?(observed.active===true&&!(framesVerified&&hardwareVerified&&configVerified)?null:observed.active):null;
   const pending=verified&&typeof observed.pending==='boolean'?observed.pending:null;
-  const available=verified&&observed.ready===true&&observed.framesVerified===true&&observed.hardwareVerified===true&&observed.configVerified===true&&active===false&&pending===false;
+  const captureStartReady=verified&&observed.configured===true&&observed.captureStartReady===true&&observed.ready===true&&hardwareVerified&&configVerified&&active===false&&pending===false&&observed.reason==='';
+  const available=verified&&observed.configured===true&&observed.ready===true&&(framesVerified||captureStartReady)&&hardwareVerified&&configVerified&&active===false&&pending===false&&observed.reason==='';
   const missing=verified&&Array.isArray(observed.missing)?observed.missing.filter(id=>['piccap','hyperhdr','screen-config'].includes(id)):[];
   let status=verified?'ready':'blocked',codes=[];
   if(!verified)codes=[observed&&/^SCREEN_[A-Z_]+$/.test(observed.code)?observed.code:'SCREEN_UNCONFIRMED'];
@@ -15,8 +17,8 @@ function normalize(action, observed){
     status=active===false&&pending===false?'complete':'partial';if(status!=='complete')codes=['SCREEN_RESTORE_PENDING'];
   }else if(!available&&active!==true){status='partial';codes=[missing.length?'SCREEN_SETUP_REQUIRED':pending?'SCREEN_RESTORE_PENDING':'SCREEN_NOT_READY'];}
   return {ok:['ready','complete'].includes(status),action:'screen'+action[0].toUpperCase()+action.slice(1),status,codes,
-    summary:action==='start'&&status==='complete'?'Sincronización con video activada.':action==='stop'&&status==='complete'?'Sincronización desactivada y luces restauradas.':missing.length?'Falta preparar la captura en esta TV.':available?'La captura está lista para activarse.':active===true?'Sincronización con video activada.':'La captura necesita revisión.',
-    steps:[],capture:{verified,available,missing,reason:verified?observed.reason:'unconfirmed',framesVerified:verified&&observed.framesVerified===true,hardwareVerified:verified&&observed.hardwareVerified===true,configVerified:verified&&observed.configVerified===true},
+    summary:action==='start'&&status==='complete'?'Sincronización con video activada.':action==='stop'&&status==='complete'?'Sincronización desactivada y luces restauradas.':missing.length?'Falta preparar la captura en esta TV.':available?captureStartReady&&!framesVerified?'La captura está lista para iniciar; todavía no hay cuadros de video confirmados.':'La captura está lista para activarse.':active===true?'Sincronización con video activada.':'La captura necesita revisión.',
+    steps:[],capture:{verified,available,missing,reason:verified?observed.reason:'unconfirmed',framesVerified,hardwareVerified,configVerified,captureStartReady},
     lights:{verified,active,pending,lampCount:verified&&Number.isInteger(observed.lampCount)?observed.lampCount:0},
     canPrepare:verified&&(missing.length>0||observed.configured===true&&observed.reason==='auth-required')&&pending===false&&!(observed.conflicts||[]).length,
     canStop:verified&&(active===true||pending===true)};
@@ -26,7 +28,7 @@ function createScreenController(deps={}){
   let busy=false;
   async function call(action,payload){
     const transport=transportFactory({host:payload.host,identity:payload.identity,port:22});
-    const response=await transport.runRemote(remote.script(action),{timeoutMs:20000});
+    const response=await transport.runRemote(remote.script(action),{timeoutMs:action==='start'||action==='stop'?25000:20000});
     if(typeof response.stdout!=='string'||Buffer.byteLength(response.stdout)>16384)throw Error('SCREEN_UNCONFIRMED');
     return JSON.parse(response.stdout);
   }

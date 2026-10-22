@@ -1,6 +1,16 @@
 # Colores de YouTube y HDMI
 
-**Estado al 2026-10-21: 0.7.7 prerelease instalada; confirmación visual del botón Pantalla completa pendiente.**
+**Estado al 2026-10-21: 0.7.8 experimental instalada; nueva prueba física pendiente.**
+
+La 0.7.8 incorpora una [reparación experimental](capture-repair.md) del capturador nativo,
+Start desde captura apagada y parada completa antes de restaurar las luces. Exige la versión
+nativa parcheada exacta. En esta TV ya se comprobó el estado listo para iniciar, con seis
+lámparas y salida apagada. Después Manual por API detuvo PicCap y restauró 6/6 estados
+exactos; Home con captura apagada devolvió Mi pantalla como foreground. El seguimiento de
+video y Home con captura activa siguen pendientes de confirmación física.
+Los plazos de Start y Manual ahora son de hasta 25 s; un timeout conserva la incertidumbre.
+
+## Checkpoint histórico 0.7.7
 
 La 0.7.7 corrige la carrera entre una orden aceptada por HyperHDR y la habilitación efectiva
 de `LEDDEVICE`: espera y vuelve a leer el estado dentro de un plazo acotado, sin repetir la

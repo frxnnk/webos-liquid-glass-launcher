@@ -104,6 +104,15 @@ test('start refuses a foreign enabled output without stopping it',async()=>{
   assert.equal(t.calls.some(c=>c.command==='componentstate'),false);
 });
 
+test('an expired operation after slow preflight cannot issue a late LED enable',async()=>{
+  let alive=true;
+  const t=setup(()=>{},{probe:async()=>({framesVerified:true}),request:async q=>{
+    if(q.command==='config')alive=false;
+  }});
+  await assert.rejects(t.backend.start(ids,{canContinue:()=>alive}),e=>e.reason==='timeout');
+  assert.equal(t.calls.some(q=>q.command==='componentstate'),false);
+});
+
 test('start waits for the asynchronous driver state after ACK without repeating enable or compensating early',async()=>{
   let data,waits=0;
   const t=setup(d=>{data=d;},{probe:async()=>({framesVerified:true}),

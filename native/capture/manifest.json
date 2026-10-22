@@ -1,0 +1,55 @@
+{
+  "upstreamCommit": "00c932f092084b234b3f619b060a98fa134c12bd",
+  "version": "00c932f-mipantalla-single-owner1",
+  "patchSha256": "d8a01a6f0faa9e4da470a9d236c788b8df1d6afe85ab60302af75885d57cf8eb",
+  "files": {
+    "unicapture/unicapture.c": {
+      "upstreamSha256": "2171e3f06d4f387c34315d6ab89df9f42dddae2f6baf49c38fe7556eac61d39a",
+      "patchedSha256": "af406152e66ab530952e4851d709e615682ba05871874e694c4d8b8eefe4ae7c"
+    },
+    "unicapture/unicapture.h": {
+      "upstreamSha256": "19d94b30116408e878cb01d4590ffd0b02f4d8d780137fddb3fc531ca1267a0e",
+      "patchedSha256": "dd472849fb9041724e84150553def42c72e6ead44d29a68863044c894a73900a"
+    },
+    "src/service.c": {
+      "upstreamSha256": "04e5e7ed905eb19f6ee9c12e26a53652e774a4c9efaadacf7e17bae9df684eb3",
+      "patchedSha256": "744d90f2e125af9e6c45f15a745ecae3c23b042dfbbdcab7d9246e954c072ceb"
+    }
+  },
+  "versionGeneratorSha256": "fe72af370adf1f7df5cbb8d0fc824b6f1703c368bf3cf1a23d8c74b07a1c2a31",
+  "vendorFiles": {
+    "GenerateVersionHeader.cmake": {
+      "sha256": "fe72af370adf1f7df5cbb8d0fc824b6f1703c368bf3cf1a23d8c74b07a1c2a31",
+      "gitBlobSha1": "2140d8a2bfabf18a138adfe6aeffe4234c1f82d1"
+    },
+    "src/log.h": {
+      "sha256": "b2b4a091d92d1c3dacd2b591c087c91593356cc608732b9644228909634345f4",
+      "gitBlobSha1": "c782ea6f2aed2e5e13e3bcc122073635d63c04db"
+    },
+    "src/service.c": {
+      "sha256": "04e5e7ed905eb19f6ee9c12e26a53652e774a4c9efaadacf7e17bae9df684eb3",
+      "gitBlobSha1": "fcaaa30aea2f5c746c5d910deeecf9cabd147701"
+    },
+    "src/utils.h": {
+      "sha256": "fa7aec4542ddca6522f98c993168671d6bbcb0d66f9d9a5f35a30d24caf92d3d",
+      "gitBlobSha1": "8cd85c4bd6f2ead6dbac2872d75d78bf53bca632"
+    },
+    "unicapture/common.h": {
+      "sha256": "5b8044160468defd948f755327da11ca6e884722e78385c600e22a5f88af93c6",
+      "gitBlobSha1": "6487004cbd5757e9d318e3973530d4bd8339e338"
+    },
+    "unicapture/converter.h": {
+      "sha256": "131d5d9cdd8b784ae3ae4928279aec6ce6fe8201a90ed51058b48c80879f2e4a",
+      "gitBlobSha1": "a853eae27f6e22b14fe6c7963cd8d8d7573c81f5"
+    },
+    "unicapture/unicapture.c": {
+      "sha256": "2171e3f06d4f387c34315d6ab89df9f42dddae2f6baf49c38fe7556eac61d39a",
+      "gitBlobSha1": "e6a3bd150027b99ca711c5b6ed1ff185e6aedc5d"
+    },
+    "unicapture/unicapture.h": {
+      "sha256": "19d94b30116408e878cb01d4590ffd0b02f4d8d780137fddb3fc531ca1267a0e",
+      "gitBlobSha1": "6c8d407d9c45793a815584b3c5677738ad123fc0"
+    }
+  },
+  "licenseSha256": "136cf8c74d8b8e6cda16f1f53d94ce30ad82c28966e6304cb50ce01e3cf006b6"
+}

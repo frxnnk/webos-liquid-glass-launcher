@@ -42,7 +42,7 @@ test('capture mode requests get the bounded settling budget while ordinary actio
   const client=load({service:{request(uri,o){sent.push(o);return {cancel(){}};}}},true,undefined,{
     options:{timeoutMs:undefined},setTimer:(fn,ms)=>{const timer={fn,ms};timers.push(timer);return timer;},clearTimer:()=>{}});
   for(const mode of ['screen','manual']){
-    const result=client.setMode({mode});assert.equal(timers[timers.length-1].ms,15000);
+    const result=client.setMode({mode});assert.equal(timers[timers.length-1].ms,25000);
     sent[sent.length-1].onSuccess({returnValue:true,mode});assert.equal((await result).mode,mode);
   }
   const state=client.setState({ids:['wiz-aabbcc001122'],on:true});

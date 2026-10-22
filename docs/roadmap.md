@@ -1,9 +1,13 @@
 # Roadmap
 
 Estado al **2026-10-21**. El dueño probó **0.7.4** y confirmó que anda bastante bien.
-La **0.7.7 está instalada**, con confirmación efectiva de salida LED y estado corregido en la
-UI; su botón Pantalla completa sigue pendiente de prueba física. En 0.7.6, desde PC, el dueño
-confirmó colores de YouTube en seis WiZ y restauración 6/6. La suite actual pasó **555/555 pruebas**.
+La **0.7.8 experimental está instalada**, con parche nativo single owner y parada completa.
+La carrera original se reprodujo localmente; se verificaron ABI y preparación en la TV.
+Manual por API detuvo PicCap y restauró 6/6 estados; Home con captura apagada llegó a Mi pantalla.
+Video, Home con captura activa y estabilidad siguen pendientes de confirmación física.
+La suite local pasó 590/590 y el harness nativo diez escenarios, también con ASan/UBSan.
+Ver [reparación y reproducción](capture-repair.md). En 0.7.6, desde PC, el dueño
+confirmó colores de YouTube en seis WiZ y restauración 6/6.
 Este documento separa funciones existentes, pruebas concretas y propuestas.
 
 ## Entregado

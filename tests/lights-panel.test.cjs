@@ -40,6 +40,7 @@ function harness(options = {}) {
     client: options.getter ? () => client : client,
     storage,
     initialIds: options.initialIds,
+    now: options.now,
     setTimer: (fn, ms) => { const timer = { fn, ms }; timers.push(timer); return timer; },
     clearTimer: (timer) => { const at = timers.indexOf(timer); if (at !== -1) timers.splice(at, 1); }
   });
@@ -71,6 +72,8 @@ async function discovered(h, devices = LAMPS) {
 }
 const SCREEN_READY = { configured: true, available: true, configVerified: true, framesVerified: true,
   hardwareVerified: true, ready: true, active: false, sourceFreshness: 'fresh', reason: '' };
+const CAPTURE_OFF_READY = { ready:true,active:false,pending:false,captureStartReady:true,
+  framesVerified:false,sourceFreshness:'unknown',reason:'' };
 async function reviewed(h, patch = {}) {
   assert.equal(typeof h.controller.screenStatus, 'function', 'explicit capture review action');
   const pending = h.controller.screenStatus();
@@ -83,6 +86,54 @@ async function modeConfirmed(h,pending,mode,patch={}) {
   h.client.last().resolve(Object.assign({},SCREEN_READY,{ready:mode!=='screen',active:mode==='screen'},patch));
   return pending;
 }
+
+test('a confirmed cold capture can be explicitly started without claiming frames already exist',async()=>{
+  const h=harness();await ready(h,{available:true,screenSync:true});await discovered(h);
+  h.controller.toggle(LAMPS[0].id);await reviewed(h,CAPTURE_OFF_READY);
+  assert.equal(h.view.screen.ready,true);assert.equal(h.view.screen.captureStartReady,true);
+  assert.equal(h.view.screen.framesVerified,false);assert.equal(h.view.screen.active,false);
+  assert.match(h.view.message,/Lista para iniciar/);assert.doesNotMatch(h.view.message,/captura verificada|Activo/);
+  const before=h.client.calls.length;const start=h.controller.setMode('screen');
+  assert.equal(h.client.calls.length,before+1);assert.equal(h.client.last().method,'setMode');
+  assert.equal(await modeConfirmed(h,start,'screen'),true);assert.equal(h.view.screen.active,true);
+});
+
+test('cold start requires strict readiness, safe ownership and no pending session',async()=>{
+  for(const patch of [{captureStartReady:false},{captureStartReady:'true'},{captureStartReady:1},
+    {captureStartReady:undefined},{ready:false},{configVerified:false},{hardwareVerified:false},
+    {available:false},{pending:true},{reason:'auth-required'},{reason:'capture-not-ready'}]){
+    const h=harness();await ready(h,{available:true,screenSync:true});await discovered(h);
+    h.controller.toggle(LAMPS[0].id);await reviewed(h,Object.assign({},CAPTURE_OFF_READY,patch));
+    assert.equal(h.view.screen.ready,false,JSON.stringify(patch));
+    const before=h.client.calls.length;assert.equal(await h.controller.setMode('screen'),false);
+    assert.equal(h.client.calls.length,before,'a blocked capture never requests Start');
+    assert.equal(h.view.screen.framesVerified,false);
+  }
+});
+
+test('a timed-out cold Start cannot be repeated and Manual recovery remains available',async()=>{
+  const h=harness();await ready(h,{available:true,screenSync:true});await discovered(h);
+  h.controller.toggle(LAMPS[0].id);await reviewed(h,CAPTURE_OFF_READY);
+  const start=h.controller.setMode('screen');const late=h.client.last();h.expire();assert.equal(await start,false);
+  assert.equal(h.view.screen.ready,false);assert.equal(h.view.screen.active,false);
+  const calls=h.client.calls.length;assert.equal(await h.controller.setMode('screen'),false);assert.equal(h.client.calls.length,calls);
+  h.controller.toggle(LAMPS[0].id);assert.deepEqual(plain(h.view.selected),[LAMPS[0].id],'uncertain recipients remain frozen');
+  const manual=h.controller.setMode('manual');assert.equal(h.client.last().method,'setMode');
+  assert.equal(h.client.last().args.mode,'manual');
+  late.resolve({mode:'screen'});await flush();assert.equal(h.client.last().args.mode,'manual');
+  assert.equal(await modeConfirmed(h,manual,'manual',CAPTURE_OFF_READY),true);assert.equal(h.view.mode,'manual');
+});
+
+test('capture mode readback uses the remainder of the same 25-second panel budget',async()=>{
+  let time=0;const h=harness({now:()=>time});await ready(h,{available:true,screenSync:true});await discovered(h);
+  h.controller.toggle(LAMPS[0].id);await reviewed(h,CAPTURE_OFF_READY);
+  const start=h.controller.setMode('screen');time=22000;h.client.last().resolve({mode:'screen'});await flush();
+  assert.equal(h.client.last().method,'screenStatus');assert.equal(h.timers[0].ms,3000);
+  h.expire();assert.equal(await start,true,'the mode ACK remains confirmed, not its capture readback');
+  assert.equal(h.view.mode,'screen');assert.equal(h.view.screen.active,false);assert.match(h.view.message,/sin confirmar/);
+  const manual=h.controller.setMode('manual');assert.equal(h.client.last().args.mode,'manual');
+  assert.equal(await modeConfirmed(h,manual,'manual',CAPTURE_OFF_READY),true);
+});
 
 test('mode readback is sequential, bounded and preserves the confirmed mode when capture is unknown',async()=>{
   const h=harness();await ready(h,{available:true,screenSync:true});await discovered(h);
@@ -126,9 +177,9 @@ test('capture review distinguishes an owned active output from readiness to star
 test('capture mode deadlines cover backend settling without extending ordinary light controls', async () => {
   const h=harness();await ready(h,{available:true,screenSync:true});await discovered(h);
   h.controller.toggle(LAMPS[0].id);await reviewed(h);
-  const start=h.controller.setMode('screen');assert.equal(h.timers[0].ms,15000);
+  const start=h.controller.setMode('screen');assert.equal(h.timers[0].ms,25000);
   assert.equal(await modeConfirmed(h,start,'screen'),true);
-  const stop=h.controller.setMode('manual');assert.equal(h.timers[0].ms,15000);
+  const stop=h.controller.setMode('manual');assert.equal(h.timers[0].ms,25000);
   assert.equal(await modeConfirmed(h,stop,'manual'),true);
   const power=h.controller.power(true);assert.equal(h.timers[0].ms,8000);
   h.client.last().resolve({devices:[LAMPS[0]]});await power;

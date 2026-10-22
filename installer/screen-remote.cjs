@@ -11,7 +11,8 @@ async function remoteScreen(request, deps) {
   }
   function rpc(uri,payload,app){return new Promise(function(resolve,reject){
     var args=['-n','1','-f'];if(app)args.push('-a','com.frxn.mipantalla');args.push(uri,JSON.stringify(payload));
-    deps.execFile('/usr/bin/luna-send',args,{encoding:'utf8',timeout:12000,maxBuffer:2097152},function(error,out){
+    var mutation=uri==='luna://com.frxn.mipantalla.lights/setMode'&&(payload.mode==='screen'||payload.mode==='manual');
+    deps.execFile('/usr/bin/luna-send',args,{encoding:'utf8',timeout:mutation?25000:12000,maxBuffer:2097152},function(error,out){
       try{if(error)throw error;var v=JSON.parse(String(out));if(!object(v)||v.returnValue!==true)throw Error('rpc');resolve(v);}catch(e){reject(Error('SCREEN_RPC_UNCONFIRMED'));}
     });
   });}
@@ -61,6 +62,7 @@ async function remoteScreen(request, deps) {
     deps.output({ok:true,verified:true,missing:[],conflicts:[],configured:status.configured===true,ready:status.ready===true,
       active:active,pending:typeof status.pending==='boolean'?status.pending:null,phase:status.phase||null,
       framesVerified:status.framesVerified===true,hardwareVerified:status.hardwareVerified===true,
+      captureStartReady:status.captureStartReady===true,
       configVerified:status.configVerified===true,lampCount:Number(status.lampCount)||0,reason:typeof status.reason==='string'?status.reason:'unknown'});
   }catch(error){deps.output({ok:false,code:/^SCREEN_[A-Z_]+$/.test(error.message)?error.message:'SCREEN_UNCONFIRMED'});}
 }
