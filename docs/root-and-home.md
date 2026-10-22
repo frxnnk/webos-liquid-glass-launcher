@@ -18,7 +18,7 @@ La lectura actual confirmó `general.homePromotion: off` y `option.livePlus`, `l
 y `webOSPromotionVideo: off`, además de los ajustes publicitarios detallados en limpieza.
 `homeAutoLaunch` volvió a `on` sin causa aislada: no se presenta como desactivado actualmente.
 Se conservaron Quick Start y las apps de recuperación. [Cambios y reversión](cleaning.md).
-La app actual es 0.7.5; el estado de pruebas por versión está en el [README](../README.md).
+La app actual es 0.7.7; el estado de pruebas por versión está en el [README](../README.md).
 
 ## Qué se revisó y qué se ejecutó
 
@@ -38,6 +38,31 @@ El IPK oficial de HBC 0.7.3 coincidió con el SHA-256 publicado por GitHub:
 
 Sus scripts de startup, jumpstart y ejecución del servicio coincidieron con la fuente revisada. No
 se reconstruyeron los binarios ARM ni se verificó reproducibilidad de todo el paquete.
+
+## Adaptador experimental del asistente local
+
+El [asistente para Brave](local-installer.md) ya incluye un adaptador de root implementado para
+**49UN7310PSC / 04.64.00 / webOS 5.6.2-21 / `jhericurl-jimna` / K6LP_ATSC_BR**. Es una cadena
+nueva, separada del procedimiento histórico de esta página. El diagnóstico y el plan reales en
+la TV actual verificaron root existente y **omitieron el bootstrap**; no se volvió a rootear.
+
+El código comprueba el perfil y Developer Mode, fija fuentes y hashes, prepara un bootstrap
+propio con acceso temporal por clave, respalda antes de provisionar HBC y comprueba los accesos
+posteriores. Conserva el script firmado y el token regular de Developer Mode. La reparación
+automática de un script alterado o ausente exige un backup con firma LG y hash stock válidos;
+no inventa ni reemplaza el token. Una reserva exclusiva por IP evita ejecuciones paralelas y
+conserva las operaciones inciertas para revisión.
+
+**No se probó la cadena completa partiendo de una TV original.** Falta integrar la primera
+confianza de huellas SSH desde la UI y comprobar físicamente el startup de este flujo nuevo.
+El adaptador no acepta huellas a ciegas, no hace downgrade ni reinicia automáticamente la TV.
+Sus pruebas locales no heredan el arranque físico confirmado con el procedimiento anterior.
+El navegador requiere el programa local de PC y SSH; aplicar el bootstrap también requiere
+Python 3.8+. [Flujo, respaldos y límites exactos](root-automation.md).
+
+La clave que permite entrar como root puede no estar autorizada para el usuario `prisoner` de
+Developer Mode. En ese caso el asistente deja el login de 9922 **sin confirmar**, mientras puede
+verificar firma y token desde root. No presenta ese fallo de autenticación como Developer Mode apagado.
 
 ## Reparación de Developer Mode
 
@@ -128,3 +153,5 @@ Siguen pendientes:
 2. Otros ciclos de standby y Quick Start+; el encendido tras apagar 20 s con el control ya está confirmado.
 3. Persistencia de Pantalla completa tras reinicio; HDMI y contenido protegido.
 4. Una prueba de desactivación completa de Home y, si se decide, de unroot.
+5. Acreditar el [adaptador experimental](root-automation.md) desde una TV original, incluida
+   confianza inicial SSH y arranque físico, sin repetirlo sobre la TV ya rooteada.

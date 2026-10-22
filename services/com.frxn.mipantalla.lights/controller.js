@@ -16,6 +16,7 @@ function matchesRequested(request, observed) {
   if (!observed) return false;
   if (request.on !== undefined && observed.on !== request.on) return false;
   if (request.brightness !== undefined && (observed.brightness === null || Math.abs(observed.brightness-request.brightness) > 1)) return false;
+  if (request.sceneId !== undefined && observed.sceneId !== request.sceneId) return false;
   if (request.temperature !== undefined && (observed.temperature === null || Math.abs(observed.temperature-request.temperature) > 50)) return false;
   if (request.rgb && (!observed.rgb || request.rgb.some(function (v,i) { return Math.abs(v-observed.rgb[i]) > 2; }))) return false;
   return true;

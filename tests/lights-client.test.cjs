@@ -36,6 +36,19 @@ test('WiZ timeout cancels and remains uncertain without a retry',async()=>{
   await assert.rejects(client.setState({ids:['wiz-aabbcc001122'],on:false}),/confirm/i);
   assert.equal(calls,1);assert.equal(cancelled,1);
 });
+
+test('capture mode requests get the bounded settling budget while ordinary actions retain their deadline',async()=>{
+  const timers=[],sent=[];
+  const client=load({service:{request(uri,o){sent.push(o);return {cancel(){}};}}},true,undefined,{
+    options:{timeoutMs:undefined},setTimer:(fn,ms)=>{const timer={fn,ms};timers.push(timer);return timer;},clearTimer:()=>{}});
+  for(const mode of ['screen','manual']){
+    const result=client.setMode({mode});assert.equal(timers[timers.length-1].ms,15000);
+    sent[sent.length-1].onSuccess({returnValue:true,mode});assert.equal((await result).mode,mode);
+  }
+  const state=client.setState({ids:['wiz-aabbcc001122'],on:true});
+  assert.equal(timers[timers.length-1].ms,12000);
+  sent[sent.length-1].onSuccess({returnValue:true,devices:[]});await state;
+});
 test('WiZ unavailable service and explicit refusals are errors, never success',async()=>{
   await assert.rejects(load(null,true).discover(),/biblioteca|servicio/i);
   const client=load({service:{request(uri,o){o.onSuccess({returnValue:false,errorText:'Denied'});return {};}}},true);

@@ -40,6 +40,9 @@ function matches(device, leds, ids, current) {
 }
 module.exports = function createBackend(options) {
   var config = options.config || {};
+  var now = options.now || Date.now;
+  var wait = options.wait || function (ms) { return new Promise(function (resolve) { setTimeout(resolve,ms); }); };
+  var setTimer = options.setTimer || setTimeout, clearTimer = options.clearTimer || clearTimeout;
   function configured() {
     if (config.invalid) throw failure('config-invalid');
     if (config.enabled !== true) throw failure('setup-pending');
@@ -54,26 +57,66 @@ module.exports = function createBackend(options) {
       if (session) session.close(); throw error;
     });
   }
+  function outputState(result) {
+    var info = result && result.info;
+    var instance = info && Array.isArray(info.instance) && info.instance.filter(function (i) {
+      return i.instance === 0 && i.running === true;
+    })[0];
+    if (!info || info.currentInstance !== 0 || !instance) throw failure('instance-mismatch');
+    if (instance.friendly_name !== config.profile) throw failure('profile-mismatch');
+    var output = Array.isArray(info.components) && info.components.filter(function (c) { return c.name === 'LEDDEVICE'; })[0];
+    if (!output || typeof output.enabled !== 'boolean') throw failure('protocol-error');
+    return output.enabled;
+  }
+  function waitForOutput(session, desired) {
+    return new Promise(function (resolve,reject) {
+      var done = false, deadline = now() + 2500;
+      function finish(error) {
+        if (done) return;
+        done = true; clearTimer(timer);
+        if (error) reject(error); else resolve({active:desired});
+      }
+      function expire() {
+        if (done) return;
+        // Cancel an in-flight RPC too; its own timeout must not extend this deadline.
+        try { session.close(); } catch (ignored) {}
+        finish(failure('timeout'));
+      }
+      var timer = setTimer(expire,2500);
+      function poll() {
+        if (done) return;
+        if (now() >= deadline) { expire(); return; }
+        Promise.resolve().then(function () { return session.request({command:'serverinfo'}); }).then(function (result) {
+          if (done) return;
+          if (now() >= deadline) { expire(); return; }
+          if (outputState(result) === desired) { finish(); return; }
+          return wait(Math.min(100,deadline - now())).then(poll);
+        }).catch(function (error) { finish(error); });
+      }
+      poll();
+    });
+  }
+  function setOutput(session, desired) {
+    return session.request({command:'componentstate',componentstate:{component:'LEDDEVICE',state:desired}}).then(function (result) {
+      if (!result || result.success !== true) throw failure('protocol-error');
+      return waitForOutput(session,desired);
+    });
+  }
   function check(session, ids) {
     if (!validIds(ids)) return Promise.reject(failure('selection-mismatch'));
-    var info, output;
+    var output;
     return session.request({command:'authorize',subcommand:'adminRequired'}).then(function (result) {
       if (!result.info || result.info.adminRequired !== false) throw failure('admin-required');
       return session.request({command:'serverinfo'});
     }).then(function (result) {
-      info = result.info;
-      var instance = info && Array.isArray(info.instance) && info.instance.filter(function (i) { return i.instance === 0 && i.running === true; })[0];
-      if (!info || info.currentInstance !== 0 || !instance) throw failure('instance-mismatch');
-      if (instance.friendly_name !== config.profile) throw failure('profile-mismatch');
-      output = Array.isArray(info.components) && info.components.filter(function (c) { return c.name === 'LEDDEVICE'; })[0];
-      if (!output || typeof output.enabled !== 'boolean') throw failure('protocol-error');
+      output = outputState(result);
       return session.request({command:'config',subcommand:'getconfig'});
     }).then(function (result) {
       if (!ids.length) throw failure('selection-required');
       return options.read(ids).then(function (current) {
         if (!current || !Array.isArray(current.devices) || !matches(result.info && result.info.device,
             result.info && result.info.leds,ids,current.devices)) throw failure('selection-mismatch');
-        return {outputEnabled:output.enabled};
+        return {outputEnabled:output};
       });
     });
   }
@@ -100,7 +143,7 @@ module.exports = function createBackend(options) {
       });
     },
     start:function (ids) {
-      var enabled = false;
+      var issued = false;
       return use(function (session) {
         return check(session,ids).then(function (checked) {
           if (checked.outputEnabled) throw failure('output-in-use');
@@ -109,20 +152,15 @@ module.exports = function createBackend(options) {
           return Promise.resolve().then(options.probe).catch(function () { throw failure('frames-unverified'); });
         }).then(function (frames) {
           if (!frames || frames.framesVerified !== true) throw failure('frames-unverified');
-          return session.request({command:'componentstate',componentstate:{component:'LEDDEVICE',state:true}});
-        }).then(function (result) {
-          if (!result || result.success === false) throw failure('protocol-error');
-          enabled = true;
-          return session.request({command:'serverinfo'});
-        }).then(function (result) {
-          var info = result.info;
-          var output = info && Array.isArray(info.components) && info.components.filter(function (c) { return c.name === 'LEDDEVICE'; })[0];
-          if (!info || info.currentInstance !== 0 || !output || output.enabled !== true) throw failure('protocol-error');
-          return {active:true};
+          issued = true;
+          return setOutput(session,true);
         }).catch(function (error) {
-          if (!enabled) throw error;
-          return session.request({command:'componentstate',componentstate:{component:'LEDDEVICE',state:false}})
-            .then(function () { throw error; },function () { throw error; });
+          if (!issued) throw error;
+          // A timed-out session may already be closed. Revalidate before the single compensating stop.
+          try { session.close(); } catch (ignored) {}
+          return use(function (recovery) {
+            return check(recovery,ids).then(function () { return setOutput(recovery,false); });
+          }).then(function () { throw error; },function () { throw error; });
         });
       });
     },
@@ -130,12 +168,7 @@ module.exports = function createBackend(options) {
       // Called only by the session owner with its persisted original selection.
       return use(function (session) {
         return check(session,ids).then(function () {
-          return session.request({command:'componentstate',componentstate:{component:'LEDDEVICE',state:false}});
-        }).then(function () { return session.request({command:'serverinfo'}); }).then(function (result) {
-          var info = result.info;
-          var output = info && Array.isArray(info.components) && info.components.filter(function (c) { return c.name === 'LEDDEVICE'; })[0];
-          if (!info || info.currentInstance !== 0 || !output || output.enabled !== false) throw failure('protocol-error');
-          return {active:false};
+          return setOutput(session,false);
         });
       }).catch(function () { var error = Error('No se confirmó la parada de la salida de video.'); error.code = 'SCREEN_STOP_UNCONFIRMED'; throw error; });
     }

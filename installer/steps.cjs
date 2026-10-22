@@ -28,12 +28,16 @@ function parse(stdout) {
   if(!value||typeof value.ok!=='boolean')throw Error('REMOTE_INVALID');
   return value;
 }
-function wrapTvExecFile(cp, environment) {
+function wrapTvExecFile(cp, environment, viaShell) {
   return function(command, args, options, callback) {
     var settings={},env={},source=options&&options.env||environment||{};
     Object.keys(options||{}).forEach(function(key){settings[key]=options[key];});
     Object.keys(source).forEach(function(key){env[key]=source[key];});
     env.LD_PRELOAD='';settings.env=env;
+    // The full capture preflight on this TV's Node 8 aborts a direct LS2 child.
+    // A fixed exec shim preserves argv and works in that same measured context.
+    // Keep the already verified installer path direct unless explicitly enabled.
+    if(viaShell===true)return cp.execFile('/bin/sh',['-c','exec "$@"','mp-capture',command].concat(args),settings,callback);
     return cp.execFile(command,args,settings,callback);
   };
 }

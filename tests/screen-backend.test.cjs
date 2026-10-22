@@ -15,13 +15,14 @@ function setup(change=()=>{},options={}) {
   const calls=[];let closed=0,connections=0;
   const rpc={connect:async()=>{connections++;return {request:async command=>{
     calls.push(command);
+    if(options.request){const result=await options.request(command,data);if(result!==undefined)return result;}
     if(command.command==='componentstate') data.server.components[0].enabled=command.componentstate.state;
     return {success:true,info:command.command==='serverinfo'?data.server:
       command.command==='config'?data.config:data.admin};},close(){closed++;}};}};
   const config={enabled:true,token:'synthetic-user-token-not-a-secret',profile:'Mi pantalla WiZ Living',
     hardwareVerified:true};
   change(data,config,rpc);
-  const backend=require(file)({config,rpc,read:async()=>({devices:lamps}),
+  const backend=require(file)({...options,config,rpc,read:async()=>({devices:lamps}),
     probe:options.probe||(async()=>({framesVerified:false,sourceFreshness:'unknown'}))});
   return {backend,data,calls,get closed(){return closed;},get connections(){return connections;}};
 }
@@ -101,4 +102,63 @@ test('start refuses a foreign enabled output without stopping it',async()=>{
   const t=setup(d=>{d.server.components[0].enabled=true;},{probe:async()=>({framesVerified:true,sourceFreshness:'fresh'})});
   await assert.rejects(t.backend.start(ids),e=>e.reason==='output-in-use');
   assert.equal(t.calls.some(c=>c.command==='componentstate'),false);
+});
+
+test('start waits for the asynchronous driver state after ACK without repeating enable or compensating early',async()=>{
+  let data,waits=0;
+  const t=setup(d=>{data=d;},{probe:async()=>({framesVerified:true}),
+    request:async q=>q.command==='componentstate'?{success:true}:undefined,
+    wait:async ms=>{assert.equal(ms,100);waits++;data.server.components[0].enabled=true;}});
+  assert.deepEqual(await t.backend.start(ids),{active:true});
+  assert.equal(waits,1);
+  assert.deepEqual(t.calls.filter(q=>q.command==='componentstate').map(q=>q.componentstate.state),[true]);
+  assert.equal(t.closed,1);
+});
+
+test('stop waits for asynchronous off confirmation before allowing baseline restoration',async()=>{
+  let data,waits=0;
+  const t=setup(d=>{data=d;d.server.components[0].enabled=true;},{
+    request:async q=>q.command==='componentstate'?{success:true}:undefined,
+    wait:async()=>{waits++;data.server.components[0].enabled=false;}});
+  assert.deepEqual(await t.backend.stop(ids),{active:false});
+  assert.equal(waits,1);
+  assert.deepEqual(t.calls.filter(q=>q.command==='componentstate').map(q=>q.componentstate.state),[false]);
+});
+
+test('an uncompleted enable has a real elapsed deadline then compensates off exactly once',async()=>{
+  let clock=0,waits=0;
+  const t=setup(()=>{},{probe:async()=>({framesVerified:true}),now:()=>clock,
+    request:async q=>q.command==='componentstate'&&q.componentstate.state?{success:true}:undefined,
+    wait:async ms=>{clock+=ms;waits++;}});
+  await assert.rejects(t.backend.start(ids),e=>e.reason==='timeout');
+  assert.equal(clock,2500);assert.equal(waits,25);
+  assert.deepEqual(t.calls.filter(q=>q.command==='componentstate').map(q=>q.componentstate.state),[true,false]);
+  assert.equal(t.data.server.components[0].enabled,false);
+});
+
+test('stop never reports stopped from ACK when the driver remains enabled at the deadline',async()=>{
+  let clock=0;
+  const t=setup(d=>{d.server.components[0].enabled=true;},{now:()=>clock,
+    request:async q=>q.command==='componentstate'?{success:true}:undefined,
+    wait:async ms=>{clock+=ms;}});
+  await assert.rejects(t.backend.stop(ids),e=>e.code==='SCREEN_STOP_UNCONFIRMED');
+  assert.equal(clock,2500);
+  assert.deepEqual(t.calls.filter(q=>q.command==='componentstate').map(q=>q.componentstate.state),[false]);
+});
+
+test('a hung state query expires at the hard deadline and a late reply cannot resume activation',{timeout:500},async()=>{
+  let requested=false,release,deadlineMs;
+  const t=setup(()=>{},{probe:async()=>({framesVerified:true}),
+    setTimer:(fn,ms)=>{deadlineMs=ms;return setTimeout(fn,10);},clearTimer:clearTimeout,
+    request:async q=>{
+      if(q.command==='componentstate'){requested=q.componentstate.state;return undefined;}
+      if(q.command==='serverinfo'&&requested&&!release)return new Promise(resolve=>{release=resolve;});
+    }});
+  await assert.rejects(t.backend.start(ids),e=>e.reason==='timeout');
+  assert.equal(deadlineMs,2500);assert.ok(release);
+  const before=t.calls.length;
+  release({success:true,info:t.data.server});
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(t.calls.length,before);
+  assert.deepEqual(t.calls.filter(q=>q.command==='componentstate').map(q=>q.componentstate.state),[true,false]);
 });

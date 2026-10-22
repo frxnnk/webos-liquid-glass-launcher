@@ -1,6 +1,6 @@
 {
   "name": "mi-pantalla-webos",
-  "version": "0.7.5",
+  "version": "0.7.7",
   "private": true,
   "description": "Inicio personalizado para LG webOS 5, con vista previa local.",
   "scripts": {

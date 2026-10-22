@@ -77,6 +77,83 @@ async function reviewed(h, patch = {}) {
   h.client.last().resolve(Object.assign({}, SCREEN_READY, patch));
   await pending;
 }
+async function modeConfirmed(h,pending,mode,patch={}) {
+  h.client.last().resolve({mode});await flush();
+  assert.equal(h.client.last().method,'screenStatus','a mode change is followed by one read');
+  h.client.last().resolve(Object.assign({},SCREEN_READY,{ready:mode!=='screen',active:mode==='screen'},patch));
+  return pending;
+}
+
+test('mode readback is sequential, bounded and preserves the confirmed mode when capture is unknown',async()=>{
+  const h=harness();await ready(h,{available:true,screenSync:true});await discovered(h);
+  h.controller.toggle(LAMPS[0].id);await reviewed(h);
+  const start=h.controller.setMode('screen');const write=h.client.last();
+  assert.equal(write.method,'setMode');write.resolve({mode:'screen'});await flush();
+  const readback=h.client.last();assert.equal(readback.method,'screenStatus');
+  assert.deepEqual(readback.args,{ids:[LAMPS[0].id]});assert.match(h.view.busy,/Revisando/);
+  readback.reject(Error('offline'));assert.equal(await start,true);
+  assert.equal(h.view.mode,'screen');assert.equal(h.view.screen.active,false);
+  assert.match(h.view.message,/sin confirmar/);
+  const manual=h.controller.setMode('manual');assert.equal(h.client.last().method,'setMode');
+  h.client.last().resolve({mode:'manual'});await flush();const late=h.client.last();
+  h.controller.close();late.resolve(Object.assign({},SCREEN_READY,{active:true}));await manual;
+  assert.equal(h.view.phase,'closed');assert.equal(h.view.screen.active,false);
+  assert.equal(h.client.calls.filter(call=>call.method==='setMode').length,2,'no writes are repeated');
+});
+
+test('a selection change invalidates the capture readback after confirmed Manual',async()=>{
+  const h=harness();await ready(h,{available:true,screenSync:true,mode:'screen'});
+  h.view.devices=plain([LAMPS[0]]);h.view.selected=[LAMPS[0].id];
+  const stop=h.controller.setMode('manual');h.client.last().resolve({mode:'manual'});await flush();
+  const readback=h.client.last();assert.equal(readback.method,'screenStatus');
+  h.controller.toggle(LAMPS[0].id);
+  readback.resolve(Object.assign({},SCREEN_READY,{ready:false,active:true}));await stop;
+  assert.equal(h.view.mode,'manual');assert.equal(h.view.screen.active,false);
+  assert.deepEqual(plain(h.view.selected),[]);
+});
+
+test('capture review distinguishes an owned active output from readiness to start', async () => {
+  const h=harness();await ready(h,{available:true,screenSync:true});await discovered(h);
+  h.controller.toggle(LAMPS[0].id);
+  await reviewed(h,{ready:false,active:true,pending:true,phase:'active',outputEnabled:true});
+  assert.equal(h.view.screen.active,true);assert.equal(h.view.screen.ready,false);
+  assert.equal(h.view.mode,'screen');assert.match(h.view.message,/Activo/);
+  assert.equal(await h.controller.setMode('screen'),false,'active capture cannot be started again');
+  const manual=h.controller.setMode('manual');
+  assert.equal(await modeConfirmed(h,manual,'manual'),true);assert.equal(h.view.screen.active,false);
+});
+
+test('capture mode deadlines cover backend settling without extending ordinary light controls', async () => {
+  const h=harness();await ready(h,{available:true,screenSync:true});await discovered(h);
+  h.controller.toggle(LAMPS[0].id);await reviewed(h);
+  const start=h.controller.setMode('screen');assert.equal(h.timers[0].ms,15000);
+  assert.equal(await modeConfirmed(h,start,'screen'),true);
+  const stop=h.controller.setMode('manual');assert.equal(h.timers[0].ms,15000);
+  assert.equal(await modeConfirmed(h,stop,'manual'),true);
+  const power=h.controller.power(true);assert.equal(h.timers[0].ms,8000);
+  h.client.last().resolve({devices:[LAMPS[0]]});await power;
+});
+
+test('capture restoration remains reachable when the owned session is not confirmed active', async () => {
+  for(const phase of ['prepared','restoring']){
+    const h=harness();await ready(h,{available:true,screenSync:true,mode:'screen'});
+    await reviewed(h,{ready:false,active:false,pending:true,phase,outputEnabled:false,reason:'restore-pending'});
+    assert.equal(h.view.screen.active,false);assert.equal(h.view.screen.ready,false);
+    assert.match(h.view.message,/restauraci/);assert.doesNotMatch(h.view.message,/Activo/);
+    const manual=h.controller.setMode('manual');
+    assert.equal(h.client.last().method,'setMode');assert.deepEqual(h.client.last().args.ids,[]);
+    assert.equal(await modeConfirmed(h,manual,'manual'),true);
+  }
+});
+
+test('a capture reply after eight seconds still confirms before the bounded mode deadline', async () => {
+  const h=harness();await ready(h,{available:true,screenSync:true});await discovered(h);
+  h.controller.toggle(LAMPS[0].id);await reviewed(h);
+  const pending=h.controller.setMode('screen');const command=h.client.last();
+  h.timers.filter(timer=>timer.ms<=9000).forEach(timer=>timer.fn());await flush();
+  assert.match(h.view.busy,/Cambiando/);assert.equal(h.client.last(),command,'no request is repeated');
+  assert.equal(await modeConfirmed(h,pending,'screen'),true);assert.equal(h.view.mode,'screen');
+});
 
 test('capture review is explicit, accepts no lamps, sends only saved ids and preserves no secrets', async () => {
   const h = harness(); await ready(h, { available: true, screenSync: false });
@@ -108,7 +185,7 @@ test('screen mode requires capture review plus capability and verified frames an
   h.view.caps.screenSync = true;
   const pending = h.controller.setMode('screen');
   assert.deepEqual(h.client.last().args, { mode: 'screen', source: 'screen', ids: [LAMPS[0].id] });
-  h.client.last().resolve({ mode: 'screen' }); assert.equal(await pending, true);
+  assert.equal(await modeConfirmed(h,pending,'screen'), true);
 });
 
 test('capture diagnostics accept only strict fields and listed reasons, including thrown errors', async () => {
@@ -142,12 +219,12 @@ test('capture timeout revokes prior readiness and late or closed responses canno
 test('screen selection and discovery stay frozen until Manual is confirmed', async () => {
   const h = harness(); await ready(h, { available: true, screenSync: true }); await discovered(h);
   h.controller.toggle(LAMPS[0].id); await reviewed(h);
-  const active = h.controller.setMode('screen'); h.client.last().resolve({ mode: 'screen' }); await active;
+  const active = h.controller.setMode('screen'); await modeConfirmed(h,active,'screen');
   const before = h.client.names(); h.controller.toggle(LAMPS[1].id);
   assert.deepEqual(plain(h.view.selected), [LAMPS[0].id]); assert.match(h.view.message, /Manual/);
   assert.equal(await h.controller.discover(), false); assert.deepEqual(h.client.names(), before);
   assert.equal(h.view.mode, 'screen');
-  const stopping = h.controller.setMode('manual'); h.client.last().resolve({ mode: 'manual' }); await stopping;
+  const stopping = h.controller.setMode('manual'); await modeConfirmed(h,stopping,'manual');
   h.controller.toggle(LAMPS[1].id);
   assert.deepEqual(plain(h.view.selected), [LAMPS[0].id, LAMPS[1].id], 'Manual confirmation unlocks selection');
 });
@@ -155,7 +232,7 @@ test('screen selection and discovery stay frozen until Manual is confirmed', asy
 test('screen manual controls preserve screen on failed stop and apply only confirmed result modes', async () => {
   const h = harness(); await ready(h, { available: true, screenSync: true }); await discovered(h);
   h.controller.toggle(LAMPS[0].id); await reviewed(h);
-  const active = h.controller.setMode('screen'); h.client.last().resolve({ mode: 'screen' }); await active;
+  const active = h.controller.setMode('screen'); await modeConfirmed(h,active,'screen');
   const control = h.controller.power(false); assert.equal(h.view.mode, 'screen');
   h.client.last().reject(Error('stop failed')); await control; assert.equal(h.view.mode, 'screen');
   const manual = h.controller.setMode('manual'); assert.equal(h.view.mode, 'screen');
@@ -174,12 +251,12 @@ test('a confirmed Manual clears a reviewed active capture and closing screen nev
   const h = harness(); await ready(h, { available: true, screenSync: true }); await discovered(h);
   h.controller.toggle(LAMPS[0].id); await reviewed(h, { active: true });
   assert.equal(h.view.mode, 'screen', 'a verified active backend cannot leave the UI in Manual');
-  const active = h.controller.setMode('screen'); h.client.last().resolve({ mode: 'screen' }); await active;
+  assert.equal(await h.controller.setMode('screen'), false, 'an active capture is not ready for another start');
   const before = h.client.names(); h.controller.close(); assert.deepEqual(h.client.names(), before);
   const reopening = h.controller.open(); h.client.last().resolve({ available: true, screenSync: true, mode: 'screen' });
   await flush(); h.client.last().resolve({ devices: [LAMPS[0]] }); await reopening;
   await reviewed(h, { active: true }); assert.equal(h.view.screen.active, true);
-  const manual = h.controller.setMode('manual'); h.client.last().resolve({ mode: 'manual' }); await manual;
+  const manual = h.controller.setMode('manual'); await modeConfirmed(h,manual,'manual');
   assert.equal(h.view.screen.active, false, 'the screen summary cannot remain Active after confirmed Manual');
 });
 
@@ -190,7 +267,7 @@ test('Manual restores backend screen recipients after reopening with no saved se
   assert.equal(h.client.last().method, 'setMode', 'screen recovery must reach the backend without UI recipients');
   assert.deepEqual(h.client.last().args, { mode: 'manual', source: 'wallpaper', ids: [] });
   assert.equal(h.view.mode, 'screen', 'recovery stays pending until backend restoration is confirmed');
-  h.client.last().resolve({ mode: 'manual' }); assert.equal(await manual, true);
+  assert.equal(await modeConfirmed(h,manual,'manual'), true);
   assert.equal(h.view.mode, 'manual'); assert.deepEqual(plain(h.view.selected), []);
   const calls = h.client.names();
   assert.equal(await h.controller.power(true), false);
@@ -222,6 +299,7 @@ test('rendered Manual stays enabled for pending screen restoration without selec
   modes[0].listeners.click(); assert.equal(client.last().method, 'setMode');
   assert.equal(modes[0].disabled, true, 'recovery cannot be submitted again while pending');
   client.last().resolve({ mode: 'manual' }); await flush();
+  client.last().resolve(SCREEN_READY); await flush();
   assert.equal(h.view.mode, 'manual'); assert.equal(modes[0].disabled, true);
 });
 

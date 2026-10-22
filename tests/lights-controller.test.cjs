@@ -79,6 +79,17 @@ test('WiZ ACK without matching readback is not a confirmed change',async()=>{
   assert.match(result.devices[0].error,/coincide|confirm/i);
 });
 
+test('WiZ scene restoration requires the exact scene in the fresh readback',async()=>{
+  for (const observedScene of [6,7,undefined]) {
+    const t=setup((address,method)=>method==='setPilot'?{success:true}:
+      {mac:id.slice(4),state:true,dimming:35,sceneId:observedScene});
+    const result=await t.controller.setState({ids:[id],on:true,brightness:35,sceneId:6});
+    assert.deepEqual(t.calls.find(c=>c.method==='setPilot').params,{state:true,dimming:35,sceneId:6});
+    assert.equal(result.devices[0].confirmed,observedScene===6);
+    assert.equal(t.calls.filter(c=>c.method==='getPilot').length,2);
+  }
+});
+
 test('WiZ getState rediscovers selected IDs after service restart and keeps failures unknown',async()=>{
   const t=setup(()=>{throw Error('offline');});
   const result=await t.controller.getState({ids:[id]});

@@ -4,17 +4,23 @@ Guía al **2026-10-21**. Mi pantalla es una app web con servicio local: no cambi
 las interfaces internas de YouTube, Netflix o Ajustes. Se puede usar sin root. **Home nativo,
 encendido automático y captura de otras apps requieren configuración adicional**.
 
-La última versión probada por el dueño es **0.7.4**: confirmó que anda bastante bien. La **0.7.5**
-incorpora el acceso a Homebrew Channel; consultar el README para su estado de instalación.
+La **0.7.7 está instalada**, con el arreglo de confirmación de salida LED y estado de la UI;
+**el botón Pantalla completa de esta versión todavía requiere prueba física**. En 0.7.6,
+desde el asistente de PC, el dueño confirmó colores de YouTube en seis WiZ y se verificó
+su restauración 6/6, incluidas dos en escena 6.
+La aceptación general de 0.7.4 y el acceso Homebrew de 0.7.5 son antecedentes.
 Los hashes y mediciones corresponden a versiones concretas, no a cualquier TV.
 
-**Alternativa nueva para root ya disponible:** el [asistente local](local-installer.md) se inicia
+**Alternativa con asistente local:** el [programa de PC](local-installer.md) se inicia
 con `npm run setup` y se maneja desde Brave. Su motor implementa plan, aplicación y restauración
-acotada para el perfil exacto de referencia; no obtiene root desde cero. La guía siguiente
+acotada para el perfil exacto de referencia. El módulo de instalación y limpieza usa root previo;
+también incorpora un [adaptador experimental de root](root-automation.md) para ese modelo,
+firmware, build y board exactos. La cadena completa partiendo de una TV original no se probó:
+la TV actual ya tiene root y el diagnóstico y el plan reales omiten el bootstrap. La guía siguiente
 conserva el camino manual con Developer Mode. No mezclar ni repetir ambos sobre una instalación
 existente sin revisar antes qué pasos necesita y qué configuraciones hay que preservar.
 
-El piloto pasó 401 pruebas y se comprobaron status, plan y un apply de privacidad idempotente
+En la validación inicial el piloto pasó 401 pruebas y se comprobaron status, plan y un apply de privacidad idempotente
 en Brave contra la TV, con respaldo real. Tras recargar, status recuperó el respaldo y restore
 terminó completado; una lectura SSH separada confirmó el snapshot completo igual al inicial.
 Home, instalación y bajas no se aplicaron en esa prueba. No acredita root desde cero ni arranque
@@ -27,7 +33,7 @@ físico con hooks nuevos. [Evidencia exacta](local-installer.md#qué-está-proba
 | Dock, fondos, clima y Transitions | Developer Mode | App probada en la TV. |
 | WiZ manual y Acompañar fondo | Servicio incluido y lámparas en la LAN | Seis lámparas controladas; color del fondo confirmado. |
 | Home y apertura al encender | Root/HBC persistente, configuración y recuperación | Confirmados desde YouTube y tras apagar 20 s con el control en 0.7.2. |
-| Colores de otras apps | Root, PicCap, HyperHDR y configuración privada | Activación/restauración físicas; HDMI y DRM pendientes. |
+| Colores de otras apps | Root, PicCap, HyperHDR y configuración privada | YouTube y restauración 6/6 confirmados desde PC en 0.7.6. Botón TV 0.7.7, boot de captura, HDMI y DRM pendientes. [Detalle](screen-sync.md). |
 | Menos anuncios y recolección | Ajustes y revisión de componentes | Ver [limpieza](cleaning.md); no demuestra cero telemetría. |
 
 Hardware: **LG 49UN7310PSC, webOS 5.6.2-21, firmware 04.64.00**, board `K6LP_ATSC_BR`.
@@ -38,8 +44,10 @@ En la computadora: Git, Node.js con npm y Python. Usamos Node 24 y Python 3.13; 
 requiere Python con `ssl.VERIFY_X509_PARTIAL_CHAIN` y `websockets`. Computadora y TV comparten
 red local. En PowerShell usar `npm.cmd` si bloquea `npm.ps1`.
 
-El piloto de PC requiere Node 18+, OpenSSH, root SSH en puerto 22 y `known_hosts` preparado;
-no necesita Python para iniciarse. Su interfaz local tiene puerto dinámico y no deja un agente
+El asistente de PC requiere Node 18+ y OpenSSH. Para instalar o limpiar usa root SSH en puerto 22
+y `known_hosts` preparado. La ruta de root experimental exige Developer Mode accesible,
+script firmado y token regular, más **Python 3.8+** al aplicar el bootstrap. No necesita Python
+para abrir la UI. Su interfaz local tiene puerto dinámico y no deja un agente
 de instalación permanente en la TV. [Alcance y pasos](local-installer.md).
 
 ## 1. Descargar el proyecto
@@ -112,12 +120,12 @@ No instalar si falla. Esto no prueba permisos ni comportamiento físico de la TV
 
 ### Paquete público fijado para el piloto
 
-El [release v0.7.5](https://github.com/frxnnk/webos-liquid-glass-launcher/releases/tag/v0.7.5)
-contiene un IPK público limpio: **56 archivos, 1.693.134 bytes**, SHA-256
-`35aae8525d754a979ade384ab2c7116641a57ef52cef90a49e41214483be6cdb`.
+El [release v0.7.7](https://github.com/frxnnk/webos-liquid-glass-launcher/releases/tag/v0.7.7)
+contiene un IPK público limpio: **56 archivos, 1.694.056 bytes**, SHA-256
+`dd107a1cf409d7348cf4efd04eb3de432afd129358701f57470c05485e2f1e17`.
 No incluye `weather-config.js`, `lights-config.js` ni `screen-config.json`; difiere del paquete
 privado instalado anteriormente. El asistente lo descarga y verifica sólo si la app está
-ausente. No sobrescribe una 0.7.5 existente; actualizar otra versión está bloqueado hasta
+ausente. No sobrescribe una 0.7.7 existente; actualizar otra versión está bloqueado hasta
 implementar preservación. [Uso y restauración del piloto](local-installer.md).
 
 `dist/` y `artifacts/` están ignorados. Un IPK construido con configuración privada puede
@@ -158,9 +166,16 @@ el IPK ni con marcar `hardwareVerified`: la atestación exige probar las lámpar
 ## 7. Root y Home: etapa avanzada separada
 
 Referencia manual para una TV **ya rooteada**, con HBC persistente y SSH root de recuperación.
-No es un método de root ni hay que repetir SlopBro sobre una TV ya rooteada. En esta unidad se
+Los bloques de esta sección no son un método de root ni hay que repetir SlopBro sobre una TV ya rooteada. En esta unidad se
 usó SlopBro/HBC 0.7.3; compatibilidad y revisión en [root-and-home.md](root-and-home.md).
 La app debe estar instalada y abrir correctamente antes de cambiar Home.
+
+Para el camino desde el asistente, consultar [root automático experimental](root-automation.md).
+El adaptador está implementado y conserva la firma y el token de Developer Mode; detiene la
+cadena si no puede verificarlos o si encuentra una operación pendiente. En la TV actual se
+verificó root existente y se omitió la cadena. Las pruebas locales del adaptador no acreditan
+root desde una TV original, primera confianza de huellas SSH ni un arranque físico con su startup.
+El browser sigue necesitando el compañero local: no reemplaza SSH ni obtiene privilegios por sí solo.
 
 Comprobar archivos, Node y rutas según [requisitos e instalación de Home](home-takeover.md#instalación-y-activación).
 Los bloques siguientes son **POSIX/sh dentro de SSH root en la TV**, no PowerShell.
@@ -340,6 +355,6 @@ Nuvio se obtiene del [repositorio oficial](https://github.com/NuvioMedia/NuvioTV
 verificando compatibilidad y hash del release elegido. No redistribuimos su IPK. Su instalación
 histórica no acredita que siga instalado ni login/reproducción actuales.
 
-- [Asistente local para root existente](local-installer.md) y [límites del navegador](browser-installer.md).
+- [Asistente local](local-installer.md), [root experimental por modelo](root-automation.md) y [límites del navegador](browser-installer.md).
 - [Visión del producto](product-vision.md) y [roadmap](roadmap.md).
 - [Bitácora](what-we-tried.md) y [fuentes](sources.md).

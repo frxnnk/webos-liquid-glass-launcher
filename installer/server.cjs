@@ -3,7 +3,7 @@ const http = require('node:http');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const crypto = require('node:crypto');
-const ACTIONS = ['status', 'plan', 'apply', 'restore'];
+const {ACTIONS,MUTATING_ACTIONS} = require('./actions.cjs');
 const FILES = {'/styles.css': ['styles.css', 'text/css; charset=utf-8'], '/app.js': ['app.js', 'text/javascript; charset=utf-8']};
 const MAX_BODY = 16 * 1024;
 function object(value) { return value !== null && typeof value === 'object' && !Array.isArray(value); }
@@ -19,6 +19,7 @@ async function startServer(options = {}) {
   const uiDir = path.resolve(options.uiDir || path.join(__dirname, 'ui'));
   const bodyTimeoutMs = duration(options.bodyTimeoutMs, 5000, 15000);
   const actionTimeoutMs = duration(options.actionTimeoutMs, 120000, 120000);
+  const preparationTimeoutMs = options.actionTimeoutMs === undefined ? 300000 : actionTimeoutMs;
   const token = crypto.randomBytes(16).toString('hex');
   const secret = Buffer.from(token, 'ascii');
   let origin, authority, mutating = false, closing = false;
@@ -48,10 +49,11 @@ async function startServer(options = {}) {
     try { message = JSON.parse(body); } catch { return error(response, 400, 'BAD_REQUEST', 'JSON inválido.'); }
     if (!object(message) || !ACTIONS.includes(message.action) || !object(message.payload) ||
         Object.keys(message).some(key => !['action', 'payload'].includes(key))) return error(response, 400, 'BAD_REQUEST', 'Acción o parámetros inválidos.');
-    const mutation = message.action === 'apply' || message.action === 'restore';
+    const mutation = MUTATING_ACTIONS.includes(message.action);
     if (mutation && mutating) return error(response, 409, 'BUSY', 'Ya hay un cambio en curso.');
     if (mutation) mutating = true;
-    const timer = setTimeout(() => error(response, 504, 'ACTION_TIMEOUT', 'La acción sigue pendiente; revisá su estado antes de repetirla.'), actionTimeoutMs);
+    const deadline = ['rootApply','screenPrepare'].includes(message.action) ? preparationTimeoutMs : actionTimeoutMs;
+    const timer = setTimeout(() => error(response, 504, 'ACTION_TIMEOUT', 'La acción sigue pendiente; revisá su estado antes de repetirla.'), deadline);
     Promise.resolve().then(() => engine.runAction(message.action, message.payload)).then(result => {
       clearTimeout(timer); if (mutation) mutating = false;
       json(response, 200, {ok: true, result});
@@ -105,7 +107,7 @@ async function startServer(options = {}) {
   });
   server.headersTimeout = 5000;
   server.requestTimeout = bodyTimeoutMs;
-  server.setTimeout(actionTimeoutMs + 5000, socket => socket.destroy());
+  server.setTimeout(Math.max(actionTimeoutMs,preparationTimeoutMs) + 5000, socket => socket.destroy());
   server.keepAliveTimeout = 1000;
   await new Promise((resolve, reject) => {
     server.once('error', reject); server.listen(options.port === undefined ? 0 : options.port, '127.0.0.1', resolve);

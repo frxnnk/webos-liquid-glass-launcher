@@ -81,6 +81,34 @@ test('start persists a sanitized prepared baseline before backend start and then
   assert.equal(t.events.filter(e=>e[0]==='start').length,1);
 });
 
+test('screen start and stop preserve two scene lamps and four RGB lamps without inventing colors', async()=>{
+  const protocol=require('../services/com.frxn.mipantalla.lights/protocol');
+  const devices=Array.from({length:6},(_,i)=>protocol.device([192,168,50,20+i].join('.'),
+    {mac:'aabbcc00112'+i,state:true,dimming:i<2?35:40+i,sceneId:i<2?6:0,
+      ...(i<2?{}:{r:i,g:i+1,b:i+2})},{}));
+  const ids=devices.map(d=>d.id), writes=[];
+  const t=fixture({read:()=>({devices}),write:(id,state)=>{
+    writes.push([id,protocol.command(state)]);return {confirmed:true};}});
+  await t.session.start(ids);
+  assert.deepEqual(t.record().devices.slice(0,2),ids.slice(0,2).map(id=>({id,state:{on:true,brightness:35,sceneId:6}})));
+  await t.restart().stop();
+  assert.deepEqual(writes,ids.map((id,i)=>[id,i<2?{state:true,dimming:35,sceneId:6}:
+    {state:true,dimming:40+i,r:i,g:i+1,b:i+2}]));
+  assert.equal(t.record(),null);
+});
+
+test('ambiguous or out-of-range scenes block before baseline persistence or backend mutation', async()=>{
+  for (const state of [
+    {on:true,brightness:35,sceneId:6,rgb:[1,2,3]},
+    {on:true,brightness:35,sceneId:6,temperature:3000},
+    ...[0,256,-1,6.5,'6'].map(sceneId=>({on:true,brightness:35,sceneId}))
+  ]) {
+    const t=fixture({read:()=>({devices:[{id:a,reachable:true,state}]})});
+    await assert.rejects(t.session.start([a]),error=>error.code==='SCREEN_BASELINE_INVALID');
+    assert.deepEqual(t.events.map(e=>e[0]),['inspect','read']);
+  }
+});
+
 test('save failure blocks start, while uncertain backend start retains prepared recovery without retries', async()=>{
   const failed=fixture({save:()=>{throw Error('disk failed');}});
   await assert.rejects(failed.session.start([a]),error=>error.code==='SCREEN_PERSIST_FAILED');

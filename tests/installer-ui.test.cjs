@@ -15,7 +15,7 @@ function fixture(options={}) {
       get textContent(){return text+this.children.map(n=>n.textContent).join('');},set textContent(value){text=String(value);this.children=[];},
       set innerHTML(value){throw new Error('Unsafe DOM rendering');}};
   }
-  const ids=['setup-form','host','identity','install','home','privacy','root','connect','prepare','apply','restore','feedback','result-summary','result-status','steps','device-status','capture-status','lights-status','plan-status'];
+  const ids=['setup-form','host','identity','identities','identity-choice','identity-results','identity-status','install','home','privacy','root','root-status','root-summary','root-plan','root-apply','root-plan-status','connect','prepare','apply','restore','feedback','result-summary','result-status','steps','device-status','capture-status','lights-status','plan-status','screen-status','screen-prepare','screen-start','screen-stop','screen-summary','screen-badge'];
   ids.forEach(id=>nodes[id]=element());
   nodes.host.value='192.168.50.20';nodes.identity.value='C:\\Keys\\tv_key';
   const removals=['webos.day','epoxyaisports','lgchannels.home'].map(value=>Object.assign(element('input'),{value}));
@@ -28,6 +28,14 @@ function fixture(options={}) {
   const app=require(source).createApp(Object.assign({document,fetch,timeoutMs:100},options));app.start();
   return {app,nodes,removals,calls,token,change(){nodes['setup-form'].listeners.input();}};
 }
+
+test('fresh capture frames are labelled separately from lamp output activity',async()=>{
+  const p=fixture(),pending=p.app.screenStatus();
+  p.calls[0].resolve({status:'ready',capture:{verified:true,available:true,framesVerified:true},lights:{verified:true,active:false,pending:false}});
+  await pending;
+  assert.equal(p.nodes['capture-status'].textContent,'Video recibido · verificado');
+  assert.equal(p.nodes['lights-status'].textContent,'Verificado · inactivo');
+});
 
 test('installer UI imports without browser globals and keeps response content as text',async()=>{
   assert.equal(typeof require(source).createApp,'function');
@@ -197,4 +205,102 @@ test('a fresh page recovers an interrupted restoring journal and can retry only 
   assert.equal(p.nodes.restore.disabled,false);assert.equal(p.nodes.prepare.disabled,true);
   pending=p.app.restore();assert.deepEqual(JSON.parse(p.calls[1].request.body),{action:'restore',payload:{backupId:'restoring-backup'}});
   p.calls[1].resolve({status:'complete'});await pending;assert.equal(p.app.getState().backupId,null);
+});
+test('identity discovery is explicit, never reads key contents and requires choosing a returned path',async()=>{
+  const p=fixture();assert.equal(p.calls.length,0);p.nodes.host.value='';p.nodes.identity.value='';
+  const pending=p.app.findIdentities();assert.deepEqual(JSON.parse(p.calls[0].request.body),{action:'identities',payload:{}});
+  p.calls[0].resolve({status:'ready',summary:'Dos claves guardadas',identities:[{path:'C:\\Keys\\known',label:'<img src=x>',source:'SSH'},{path:'C:\\Keys\\second',label:'Otra clave'},{path:'bad\npath',label:'Inválida'}]});await pending;
+  assert.equal(p.nodes.identity.value,'');assert.equal(p.nodes['identity-choice'].children.length,3);
+  assert.match(p.nodes['identity-choice'].textContent,/<img src=x>/);
+  p.nodes['identity-choice'].value='C:\\Keys\\not-returned';p.nodes['identity-choice'].listeners.change();assert.equal(p.nodes.identity.value,'');
+  p.nodes['identity-choice'].value='C:\\Keys\\known';p.nodes['identity-choice'].listeners.change();assert.equal(p.nodes.identity.value,'C:\\Keys\\known');
+  assert.equal(p.calls.length,1);
+});
+test('selecting a discovered identity invalidates the reviewed plan and identity failures keep the manual path',async()=>{
+  const p=fixture();let pending=p.app.prepare();p.calls[0].resolve({status:'planned',plan:{id:'reviewed'}});await pending;
+  pending=p.app.findIdentities();p.calls[1].resolve({status:'ready',identities:[{path:'C:\\Keys\\other',label:'TV'}]});await pending;
+  p.nodes['identity-choice'].value='C:\\Keys\\other';p.nodes['identity-choice'].listeners.change();assert.equal(p.nodes.apply.disabled,true);
+  pending=p.app.findIdentities();p.calls[2].reject(Error('offline'));await pending;
+  assert.equal(p.nodes.identity.value,'C:\\Keys\\other');assert.match(p.nodes['identity-status'].textContent,/ruta|buscar/i);
+});
+test('video controls wait for checked capture, require explicit clicks and never infer activation from an ACK',async()=>{
+  const p=fixture();assert.equal(p.nodes['screen-start'].disabled,true);assert.equal(p.nodes['screen-stop'].disabled,true);
+  let pending=p.app.screenStatus();assert.deepEqual(JSON.parse(p.calls[0].request.body),{action:'screenStatus',payload:{host:'192.168.50.20',identity:'C:\\Keys\\tv_key'}});
+  p.calls[0].resolve({status:'ready',capture:{verified:true,available:false,active:false,reason:'Falta preparar'},lights:{verified:true,active:false}});await pending;
+  assert.equal(p.nodes['screen-prepare'].disabled,false);assert.equal(p.nodes['screen-start'].disabled,true);
+  pending=p.app.screenPrepare();assert.equal(p.nodes.connect.disabled,true);await p.app.apply();assert.equal(p.calls.length,2);
+  p.calls[1].resolve({status:'complete',capture:{verified:true,available:true,active:false},lights:{verified:true,active:false}});await pending;
+  assert.equal(p.nodes['screen-start'].disabled,false);pending=p.app.screenStart();assert.equal(JSON.parse(p.calls[2].request.body).action,'screenStart');
+  p.calls[2].resolve({status:'complete',capture:{active:true},lights:{active:true}});await pending;
+  assert.match(p.nodes['lights-status'].textContent,/Sin verificar/);assert.equal(p.nodes['screen-start'].disabled,true);
+  assert.equal(p.nodes.prepare.disabled,true);assert.match(p.nodes['screen-summary'].textContent,/Revis/);
+});
+test('checked video activation enables stop, stale targets revoke control and pending recovery still permits stop',async()=>{
+  const p=fixture();let pending=p.app.screenStatus();p.calls[0].resolve({status:'ready',capture:{verified:true,available:true,active:true},lights:{verified:true,active:true}});await pending;
+  assert.equal(p.nodes['screen-stop'].disabled,false);assert.equal(p.nodes['screen-start'].disabled,true);
+  p.nodes.host.value='192.168.50.30';p.change();assert.equal(p.nodes['screen-stop'].disabled,true);
+  pending=p.app.screenStatus();p.nodes.identity.value='C:\\Keys\\other';p.change();p.calls[1].resolve({capture:{verified:true,available:true},lights:{verified:true,active:true}});await pending;
+  assert.equal(p.nodes['screen-stop'].disabled,true);
+  pending=p.app.screenStatus();p.calls[2].resolve({status:'recovery-pending',capture:{verified:true,available:true,active:null},lights:{verified:false,active:null},recovery:{pending:true}});await pending;
+  assert.equal(p.nodes['screen-stop'].disabled,false);assert.equal(p.nodes['screen-start'].disabled,true);
+  pending=p.app.screenStop();assert.equal(JSON.parse(p.calls[3].request.body).action,'screenStop');
+  p.calls[3].resolve({status:'complete',capture:{verified:true,available:true,active:false},lights:{verified:true,active:false,pending:false},recovery:{pending:false}});await pending;
+  assert.equal(p.nodes['screen-stop'].disabled,true);assert.equal(p.nodes['screen-start'].disabled,false);
+});
+
+test('a video mutation timeout cannot be replayed and only matching capture review resolves uncertainty',async()=>{
+  const p=fixture({timeoutMs:5});let pending=p.app.screenStatus();p.calls[0].resolve({capture:{verified:true,available:true},lights:{verified:true,active:false}});await pending;
+  await p.app.screenStart();assert.equal(p.nodes['screen-start'].disabled,true);assert.equal(p.nodes.prepare.disabled,true);
+  await p.app.screenStart();assert.equal(p.calls.length,2);
+  const original=p.nodes.host.value;p.nodes.host.value='192.168.50.31';p.change();pending=p.app.screenStatus();p.calls[2].resolve({capture:{verified:true,available:true},lights:{verified:true,active:false}});await pending;
+  assert.equal(p.nodes.prepare.disabled,true);p.nodes.host.value=original;p.change();pending=p.app.screenStatus();
+  p.calls[3].resolve({capture:{verified:true,available:true},lights:{verified:true,active:false},recovery:{pending:false}});await pending;
+  assert.equal(p.nodes.prepare.disabled,false);assert.equal(p.nodes['screen-start'].disabled,false);
+});
+
+test('identity help explains a local key path and video preparation is a labelled explicit action',()=>{
+  const html=fs.readFileSync(path.join(__dirname,'../installer/ui/index.html'),'utf8');
+  assert.match(html,/NO es el PIN/);assert.match(html,/guardado en esta computadora/);assert.match(html,/Buscar claves en esta PC/);
+  assert.match(html,/Preparar captura/);assert.match(html,/Activar/);assert.match(html,/Desactivar/);
+  assert.doesNotMatch(html,/type="file"|localStorage|sessionStorage/);
+});
+
+test('an unchecked media response and direct target edits never label unknown lamps active or inactive',async()=>{
+  const p=fixture();let pending=p.app.screenStatus();p.calls[0].resolve({status:'ready',capture:{active:true},lights:{active:false}});await pending;
+  assert.equal(p.nodes['screen-badge'].textContent,'Sin verificar');assert.equal(p.nodes['screen-start'].disabled,true);
+  pending=p.app.screenStatus();p.nodes.host.value='192.168.50.33';
+  p.calls[1].resolve({capture:{verified:true,available:true},lights:{verified:true,active:true}});await pending;
+  assert.match(p.nodes['lights-status'].textContent,/Sin verificar/);assert.equal(p.nodes['screen-stop'].disabled,true);
+  assert.match(p.nodes.feedback.textContent,/cambió/);
+});
+
+test('a pending video mutation cannot adopt a stop session belonging to another target',async()=>{
+  const p=fixture({timeoutMs:5});let pending=p.app.screenStatus();p.calls[0].resolve({capture:{verified:true,available:true},lights:{verified:true,active:false}});await pending;
+  await p.app.screenStart();p.nodes.identity.value='C:\\Keys\\another-tv';p.change();
+  pending=p.app.screenStatus();p.calls[2].resolve({capture:{verified:true,available:true},lights:{verified:false,active:null},recovery:{pending:true}});await pending;
+  assert.equal(p.nodes['screen-stop'].disabled,true);await p.app.screenStop();assert.equal(p.calls.length,3);
+  assert.equal(p.nodes.prepare.disabled,true);
+});
+
+test('root inspection is explicit, read-only and requires verified active root before reporting success',async()=>{
+  const p=fixture();assert.equal(p.calls.length,0);let pending=p.app.rootStatus();
+  assert.deepEqual(JSON.parse(p.calls[0].request.body),{action:'rootStatus',payload:{host:'192.168.50.20',identity:'C:\\Keys\\tv_key'}});
+  p.calls[0].resolve({status:'ready',root:{active:true,persistent:true}});await pending;
+  assert.match(p.nodes['root-summary'].textContent,/no está confirmado/);
+  pending=p.app.rootStatus();p.calls[1].resolve({status:'ready',root:{verified:true,active:true,persistent:true}});await pending;
+  assert.match(p.nodes['root-summary'].textContent,/activo y persistente/);
+  assert.deepEqual(p.calls.map(call=>JSON.parse(call.request.body).action),['rootStatus','rootStatus']);
+});
+
+test('backend capture repair and light recovery capabilities take precedence over incomplete active states',async()=>{
+  const p=fixture();let pending=p.app.screenStatus();
+  p.calls[0].resolve({capture:{verified:true,available:false},lights:{verified:true,active:false},canPrepare:false});await pending;
+  assert.equal(p.nodes['screen-prepare'].disabled,true);
+  pending=p.app.screenStatus();p.calls[1].resolve({capture:{verified:false,available:false},lights:{verified:false,active:null,pending:true},canPrepare:true,canStop:true});await pending;
+  assert.equal(p.nodes['screen-stop'].disabled,false);assert.equal(p.nodes['screen-start'].disabled,true);
+  assert.match(p.nodes['screen-badge'].textContent,/pendiente/);
+});
+test('an active session baseline enables stop without labelling normal synchronization as uncertain',async()=>{
+  const p=fixture();const pending=p.app.screenStatus();p.calls[0].resolve({capture:{verified:true,available:false},lights:{verified:true,active:true,pending:true},canStop:true});await pending;
+  assert.equal(p.nodes['screen-badge'].textContent,'Sincronización activa');assert.equal(p.nodes['screen-stop'].disabled,false);assert.equal(p.nodes.prepare.disabled,false);
 });

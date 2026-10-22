@@ -76,3 +76,15 @@ test('WiZ send failures after bind reject safely instead of escaping the request
   await assert.rejects(transport.query(ip,'getPilot',{}),/send failed/);
   assert.equal(sockets[0].closed,true);
 });
+test('WiZ scene restoration reaches setPilot with the validated scene and original brightness',async()=>{
+  const sockets=[],sent=[];
+  const transport=load()({interfaces,timeoutMs:15,socketFactory:socketFactory((socket,packet)=>{sent.push(packet);reply(socket,packet.method,{success:true});},sockets)});
+  const ack=await transport.query(ip,'setPilot',{state:true,dimming:40,sceneId:6});
+  assert.equal(ack.success,true);assert.deepEqual(sent,[{method:'setPilot',params:{state:true,dimming:40,sceneId:6}}]);assert.equal(sockets.length,1);assert.equal(sockets[0].closed,true);
+});
+test('WiZ invalid scenes and scene/color combinations are rejected before creating a UDP socket',async()=>{
+  const sockets=[];
+  const transport=load()({interfaces,timeoutMs:15,socketFactory:socketFactory(()=>assert.fail('no packet'),sockets)});
+  for(const params of [{sceneId:0},{sceneId:256},{sceneId:6.5},{sceneId:'6'},{sceneId:6,r:1,g:2,b:3},{sceneId:6,temp:2700},{sceneId:6,method:'reboot'}])await assert.rejects(transport.query(ip,'setPilot',params),/inválid|incompatible|escena/i);
+  assert.equal(sockets.length,0);
+});

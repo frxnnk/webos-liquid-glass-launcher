@@ -1,14 +1,63 @@
 # Colores de YouTube y HDMI
 
-**Estado actual comprobado de nuevo el 2026-10-21, con Mi pantalla 0.7.5:** PicCap y
-HyperHDR no aparecen instalados, no hay procesos/listeners de captura y falta
-`screen-config.json` en el servicio. Por lo tanto **la sincronización con video no está
-operativa actualmente**. No se determinó cuándo se perdió esa instalación ni se atribuye
-a la limpieza reciente: sus inventarios previos ya mostraban esas apps ausentes.
-Las pruebas físicas que siguen son históricas. Acompañar fondo conserva su alcance distinto,
-el color de la foto del launcher; no acredita captura de YouTube.
+**Estado al 2026-10-21: 0.7.7 instalada; prueba física del botón Pantalla completa pendiente.**
 
-La 0.6.0 habilita **Pantalla completa** solo después de comprobar configuración, atestación
+La 0.7.7 corrige la carrera entre una orden aceptada por HyperHDR y la habilitación efectiva
+de `LEDDEVICE`: espera y vuelve a leer el estado dentro de un plazo acotado, sin repetir la
+orden. La fachada de la TV sólo marca activa una sesión propia con salida encendida y
+configuración, hardware y frames frescos verificados. Activa no equivale a lista para otro Start.
+Tras Pantalla completa o Manual confirmados, el panel consulta el estado una vez; si falla,
+conserva el modo confirmado, permite Manual y muestra captura sin confirmar. No hay polling.
+El plazo de esos cambios es 15 s; los demás controles conservan sus tiempos anteriores.
+La suite completa pasó **555/555 pruebas**. Eso no prueba todavía el botón físico de la TV.
+
+## Checkpoint físico 0.7.6 desde el asistente de PC
+
+Se reinstalaron PicCap
+0.5.3 y HyperHDR Loader 22.0.1. Tras un `stop`/`start` mediante la API oficial, PicCap volvió
+a informar captura de UI y video a **29,44–29,5 FPS**, con YouTube abierto por el dueño.
+El perfil histórico WiZ y el acceso del servicio a su configuración privada también se
+recuperaron. Brave mostró **Sincronización activa** y el dueño confirmó que las seis lámparas
+siguen los colores del video de YouTube. **Desactivar restauró 6/6 lámparas**, incluidas las
+dos escenas originales; una lectura independiente contrastó el resultado con el estado previo.
+
+La activación se bloqueó antes de crear el baseline y habilitar salida: dos lámparas estaban
+en la escena 6 de WiZ y no devolvían RGB. La 0.7.6 incorporó la lectura y el baseline de esos
+estados y permitió la activación confirmada. Admite `sceneId` entero de **1 a 255**, como
+alternativa a RGB o temperatura; **la escena 6** es el caso observado en esta TV. No conserva
+custom scenes ni Rhythm. Las pruebas de 0.6.0 que siguen son históricas; el resultado actual de
+parada tiene comprobación propia. Acompañar fondo conserva su alcance distinto: usa el color
+de la foto del launcher, no acredita captura de YouTube.
+
+## Recuperación y límites del checkpoint 0.7.6
+
+- HyperHDR conservaba su base en la ubicación Qt `/home/root/.config/HyperHDR`. Se adoptó
+  explícitamente el perfil histórico con las mismas seis identidades e IP comprobadas en vivo.
+  Se preservaron su orden de lámparas, regiones y suavizado; no se reemplazó por un orden nuevo.
+- Se respaldó el export de la base antes de generar credenciales y endurecer la autenticación.
+  `apiAuth` y `localAdminAuth` quedaron activos. La preparación conservó la salida deshabilitada;
+  la activación posterior pasó por la sesión con baseline antes de encenderla.
+- El servicio propio se ejecutaba en una jaula con UID 6730 y no podía leer su configuración
+  root `600`. Se aplicó la definición acotada hacia una copia privada del wrapper, root `0500`
+  dentro de `0700`, y se confirmó el servicio relanzado con **UID 0**. El catálogo LS2 se
+  recargó con el ejecutable real `/usr/sbin/ls-control`; la copia original quedó intacta.
+- El almacén antiguo de sesiones pertenecía al UID de la jaula y estaba **vacío, sin baseline**.
+  Se migró de forma acotada a un almacén privado root `0700`, después de verificar ese estado.
+  No se usó `chown` recursivo ni se implementó una migración automática sobre sesiones pendientes.
+  Un baseline existente se conserva para recuperar las lámparas; no se borra para destrabar el modo.
+- Activar y los colores del video tienen confirmación del dueño. Desactivar mostró en Brave
+  «Sincronización desactivada y luces restauradas» y volvió a quedar listo para activar.
+  Una consulta directa al servicio y otra a `getPilot` contrastaron encendido, brillo, RGB,
+  temperatura y `sceneId` contra los datos originales: **6/6 restauradas, dos en escena**.
+  La comparación incorporó el `sceneId` original de las respuestas crudas; no se ignoraron
+  diferencias de formato de la versión anterior. Tampoco se acredita arranque automático de
+  captura tras encender la TV, HDMI o contenido protegido.
+
+La suite completa de 0.7.6 pasó **541/541 pruebas**. El resultado en hardware y la
+confirmación del dueño y la restauración independiente se documentan por separado; los tests
+no prueban todos los IDs de escena admitidos ni reemplazan esas verificaciones en hardware.
+
+La prueba histórica 0.6.0 habilitaba **Pantalla completa** solo después de comprobar configuración, atestación
 física y frames frescos de PicCap. La activación y la parada se probaron físicamente el
 2026-10-21 en la TV con las seis lámparas WiZ del living. No es una promesa de captura universal:
 HDMI, contenido protegido, persistencia tras reinicio y el mapeo exacto de cada lámpara siguen
@@ -33,8 +82,9 @@ pendientes.
 
 ## Qué comprueba Revisar captura
 
-El botón pide `screenStatus` únicamente al pulsarlo. No cambia luces, no activa capturadores y no
-habilita la salida. Abrir el panel, enfocar controles u ocultar la app no ejecuta esa revisión.
+El botón pide `screenStatus` al pulsarlo. La 0.7.7 también hace una consulta secuencial después
+de confirmar Pantalla completa o Manual. Esa lectura no cambia luces, no activa capturadores
+ni habilita la salida. Abrir el panel, enfocar controles u ocultar la app no la ejecuta.
 
 El diagnóstico comprueba:
 
@@ -100,7 +150,90 @@ detenerse; no restaura por sí solo el estado anterior. Por eso la sesión guard
 estado. El suavizado de HyperHDR tiene su propio reloj, con mínimo de 20 Hz; no se midió todavía
 su efecto con este grupo.
 
-## Fuentes
+## Control desde el asistente del navegador
+
+El asistente local incorpora **Revisar captura**, **Preparar captura**, **Activar** y
+**Desactivar**. La conexión usa el mismo archivo de identidad SSH que las demás funciones;
+el navegador no recibe el contenido de esa clave ni los tokens de HyperHDR.
+
+- **Revisar captura** consulta el estado real. Un componente ausente se muestra como faltante;
+  una conexión que no respondió queda sin confirmar. Ninguno de esos casos significa que las
+  lámparas estén apagadas.
+- **Preparar captura** está limitado a la LG 49UN7310PSC con firmware 04.64.00 y webOS 5.6.2.
+  Instala únicamente los paquetes oficiales que faltan, con versión y SHA-256 fijados. Conserva
+  instalaciones de otra versión para revisión, sin sobrescribirlas.
+- **Activar** usa la sesión del servicio de Mi pantalla: guarda primero el estado de las seis
+  lámparas y exige configuración, comprobación física y frames actuales antes de habilitar la
+  salida. Se mantiene funcionando al pasar a YouTube.
+- **Desactivar** vuelve a Manual y restaura ese estado. Si alguna lámpara no confirma, la
+  recuperación queda pendiente y se puede reintentar. Perder la selección del launcher no
+  impide restaurar: se usan las identidades del respaldo de la sesión.
+
+La preparación conserva un respaldo privado del export oficial de HyperHDR y de los ajustes
+anteriores antes de modificar credenciales. Genera una contraseña y guarda el token de usuario
+con permisos restringidos en la TV; mantiene activada la autenticación de la API y del
+administrador local. No publica esos datos en GitHub ni en la interfaz.
+
+El servicio de luces necesita leer esa configuración privada con permisos `600`. La
+preparación respalda su definición LS2 y cambia únicamente el ejecutable de
+`com.frxn.mipantalla.lights` a una copia privada del wrapper de Homebrew Channel 0.7.3.
+La fuente instalada se lee como datos: sus bytes deben coincidir con el hash fijado y el
+inodo debe permanecer estable. La copia ejecutable queda a nombre de root, con permisos
+`500`, dentro de una carpeta `700`; el ejecutable original del proveedor no se modifica ni
+se usa desde la definición del servicio. No amplía sus roles ni sus permisos LS2.
+Para recargar la configuración detiene
+solo el proceso con el nombre, UID, ejecutable y directorio de ese servicio; el watcher de
+Home queda fuera de esa selección.
+Si una reinstalación regenera la definición stock del servicio, este paso debe reaplicarse.
+La prueba de preparación no acredita persistencia de esa definición ni de la captura después
+de un arranque en frío.
+
+La investigación también distingue una instalación ausente de una configuración persistente:
+HyperHDR puede guardar su base en `/home/root/.config/HyperHDR` cuando no existe `.hyperhdr`.
+La restauración interna de nuestro perfil histórico exige su nombre exacto, las mismas seis
+identidades e IP comprobadas en vivo, seis regiones válidas y la salida desactivada. Conserva
+el orden, el mapeo y el suavizado anteriores; no adopta otro perfil WiZ por su tipo solamente.
+Esa ruta necesita una selección explícita y deja respaldados también los ajustes de
+autenticación anteriores antes de endurecer el acceso administrativo local.
+La adopción no arranca un HyperHDR detenido: necesita conectarse al proceso existente para
+comprobar primero su perfil y su salida. Una instalación de paquetes nueva tampoco demuestra
+que la base sea nueva. El primer arranque automático de preparación solo se permite cuando
+faltan ambas bases conocidas y sus rutas son seguras. Se conserva el reinicio controlado
+después del import con la salida deshabilitada; el arranque automático de captura al encender
+la TV sigue pendiente.
+
+HyperHDR 22 regenera el token de usuario en cada arranque del daemon. Después del reinicio
+controlado, el asistente vuelve a autenticar con la contraseña privada guardada en la TV y
+persiste el token nuevo antes de actualizar el servicio. Si HyperHDR se reinicia por fuera de
+esa preparación, **Revisar captura** puede informar que falta autorización. **Preparar
+captura** permite renovarla cuando no hay una sesión ni una recuperación pendientes. Esto no
+acredita persistencia automática entre reinicios; si existe un baseline pendiente, se conserva
+para recuperar las lámparas y no se vuelve a preparar encima de él.
+La publicación conserva en el registro privado el token anterior propio hasta completar el
+cambio: un fallo al escribir la configuración puede reanudarse sin aceptar tokens ajenos.
+
+La configuración del driver se importa con la API oficial `save-db`/`load-db` y se verifica
+después de reiniciar HyperHDR. Esto evita cambiar el driver en caliente: HyperHDR 22.0.1 puede
+encender la salida automáticamente al recibir un cambio de `device`, incluso si antes se pidió
+apagarla. El perfil preparado arranca con la salida de luces deshabilitada; solo **Activar** crea
+la sesión que guarda y restaura el estado de las lámparas.
+
+Los valores iniciales son 320 × 180 píxeles y 30 FPS de captura, con suavizado a 25 Hz. Son
+límites de trabajo para esta TV, no una medición de latencia ni una garantía de fluidez. La
+atestación física tampoco se deduce del import: una instalación nueva sigue necesitando esa
+comprobación. No se habilita el inicio automático de PicCap en esta etapa.
+
+Los helpers de captura incluyen una compatibilidad específica con el Node 8 de esta TV. En el
+preflight completo, un hijo LS2 lanzado directamente abortó; el mismo preflight funcionó al
+ejecutarlo mediante un wrapper fijo `exec "$@"`. Los comandos y sus parámetros viajan como
+argumentos, sin interpolarlos en código de shell. Se conservan los límites de tiempo y de
+salida, y no se agregan reintentos. Los demás pasos del instalador conservan su ruta directa.
+La primera lectura de las seis WiZ puede incluir el descubrimiento del servicio en frío: en la
+TV superó el límite anterior de seis segundos. Esa consulta dispone de doce segundos; las
+demás llamadas de preparación conservan seis, y siguen vigentes el watchdog de dieciocho
+segundos y el límite SSH de veinte segundos.
+
+## Fuentes de la preparación
 
 - [PicCap: funcionamiento, requisitos y límites de captura](https://github.com/TBSniller/piccap#whats-this).
 - [Release PicCap 0.5.3](https://github.com/TBSniller/piccap/releases/tag/0.5.3).
@@ -108,3 +241,6 @@ su efecto con este grupo.
 - [Driver WiZ de HyperHDR 22](https://github.com/awawa-dev/HyperHDR/blob/e5bda285227cbd38bce60da6a442dde936fd9e7a/sources/led-drivers/net/DriverNetWiz.cpp).
 - [Ciclo de encendido y apagado del driver](https://github.com/awawa-dev/HyperHDR/blob/e5bda285227cbd38bce60da6a442dde936fd9e7a/sources/led-drivers/LedDevice.cpp).
 - [Reporte de captura en otra placa K6LP; no acredita esta unidad](https://github.com/webosbrew/hyperion-webos/issues/55).
+- [Importación oficial de la base: transacción de ajustes e instancias](https://github.com/awawa-dev/HyperHDR/blob/e5bda285227cbd38bce60da6a442dde936fd9e7a/sources/db/DBManager.cpp).
+- [Reinicio del proceso después de `load-db`](https://github.com/awawa-dev/HyperHDR/blob/e5bda285227cbd38bce60da6a442dde936fd9e7a/sources/api/HyperAPI.cpp).
+- [Recreación del driver al cambiar `device` en caliente](https://github.com/awawa-dev/HyperHDR/blob/e5bda285227cbd38bce60da6a442dde936fd9e7a/sources/base/HyperHdrInstance.cpp).

@@ -3,9 +3,18 @@
 Un inicio personalizado para LG webOS: tus apps, fotos y el control del living en una pantalla
 Liquid Glass que se maneja con el control remoto.
 
-**0.7.5 instalada en la TV de referencia.** Incorpora un acceso a Homebrew Channel y un auditor
+**0.7.7 instalada en la TV de referencia; prueba física de Pantalla completa pendiente.** Conserva un acceso a Homebrew Channel y un auditor
 de privacidad y recursos de sólo lectura. Los ocho accesos entran a 1080p y 720p. El acceso
 abrió Homebrew Channel en la TV; no instala paquetes ni obtiene root por sí mismo.
+
+En la **0.7.6**, desde el asistente de PC, el dueño confirmó
+que las seis lámparas siguen los colores del video de YouTube. **Desactivar restauró las seis**,
+incluidas las dos en escena: el estado se contrastó de forma independiente con el original.
+
+Después, el botón de la TV expuso una carrera: HyperHDR aceptaba una orden encolada antes de
+confirmar `LEDDEVICE`. La **0.7.7** espera el estado efectivo y separa captura activa de preparada
+en la UI. Tras activar o volver a Manual hace una sola consulta de estado. **Todavía no se
+confirmó físicamente este arreglo desde el botón Pantalla completa de la TV.**
 
 [**Tutorial completo**](docs/tutorial.md) · [Privacidad y limpieza](docs/privacy-cleanup.md) ·
 [Funciones futuras](docs/product-vision.md) · [Instalador desde el navegador](docs/browser-installer.md)
@@ -43,25 +52,37 @@ captura de otras apps requieren root y configuración adicional.
   Homebrew en primer plano después de abrirlo desde el nuevo acceso.
 - La muestra de navegación rápida 0.7.5 registró aproximadamente **59,7 FPS** por CDP.
   No es un tiempo desde el encendido ni una garantía de FPS para todos los escenarios.
-- Pantalla completa tuvo activación/restauración física en una etapa anterior con PicCap e
-  HyperHDR. El inventario actual no muestra sus apps: hay que comprobar de nuevo instalación,
-  servicios y configuración. HDMI y contenido protegido siguen pendientes.
+- PicCap 0.5.3 y HyperHDR 22.0.1 se reinstalaron; PicCap informa captura de UI y video a
+  **29,44–29,5 FPS** con YouTube abierto por el dueño. Se recuperaron el perfil histórico de
+  las seis WiZ y el servicio propio con UID 0. La 0.7.6 corrigió el bloqueo anterior de las
+  lámparas en escena 6; Brave mostró sincronización activa y el dueño confirmó que siguen los
+  colores del video. Desactivar devolvió las seis al estado original, incluidas las dos escenas,
+  con lectura independiente de encendido, brillo, RGB, temperatura e identificador de escena.
 
 [Mediciones y método](docs/performance.md) · [Home y reversión](docs/home-takeover.md) ·
 [Luces y sus límites](docs/lights.md) · [Captura](docs/screen-sync.md)
 
 ## Instalar
 
-**Piloto para una TV ya rooteada:** `npm run setup` (`npm.cmd run setup` en PowerShell) inicia un
-asistente local para Brave, limitado al modelo y firmware de referencia. Permite revisar un
-plan y aplicar instalación, Home, privacidad o tres bajas LG opcionales, con respaldo y
-restauración acotada. Requiere SSH root y huella ya verificados; **no obtiene root desde cero**.
-[Requisitos, paquete público, recuperación y pruebas pendientes](docs/local-installer.md).
+`npm run setup` (`npm.cmd run setup` en PowerShell) inicia el **asistente local para Brave**,
+limitado al modelo y firmware de referencia. La interfaz explica la clave SSH, busca archivos
+conocidos sin leer su contenido y permite revisar planes de instalación, Home, privacidad y
+tres bajas LG opcionales, con respaldo y restauración acotada. También incorpora los controles
+de captura de video y luces. [Guía del asistente](docs/local-installer.md).
 
-El piloto pasó **401 pruebas**. En Brave contra la TV se verificaron conexión/plan y aplicación
+**Root automático experimental:** hay una cadena implementada con Preparar/Revisar/Aplicar,
+fuentes fijadas y protección contra ejecuciones simultáneas para el mismo host. **No está
+validada de punta a punta sobre una TV original ni mediante arranque físico.** Una TV ya
+rooteada se omite. Las huellas SSH nuevas requieren verificación humana; el asistente no las
+acepta a ciegas ni reintenta una operación incierta. [Alcance y límites](docs/browser-installer.md).
+
+El piloto anterior pasó **401 pruebas**. En Brave contra la TV se verificaron conexión/plan y aplicación
 idempotente de privacidad, con respaldo real. Tras recargar se recuperó ese respaldo y se
 restauró; otra lectura SSH confirmó el snapshot completo igual al inicial. Home, instalación
-y bajas no se aplicaron con este piloto; root desde cero y arranque físico siguen pendientes.
+y bajas no se aplicaron con ese piloto. La suite completa de la versión actual pasó
+**555/555 pruebas**. Esto no prueba root desde cero ni el botón físico de 0.7.7. La confirmación
+de colores y restauración 6/6 corresponde al checkpoint 0.7.6 desde el asistente de PC.
+Reinicio de captura, HDMI y contenido protegido siguen pendientes.
 
 El [tutorial](docs/tutorial.md) incluye Developer Mode, emparejamiento, configuración, paquetes,
 Home manual, recuperación y desinstalación. Para la parte local:
@@ -123,16 +144,16 @@ recuperación y escenas WiZ con confirmación y deshacer. Son propuestas con req
 criterios de aceptación, no funciones anunciadas como terminadas.
 [Visión del producto](docs/product-vision.md) · [Roadmap](docs/roadmap.md).
 
-El piloto local ya tiene interfaz en el browser y motor con plan, respaldo, aplicación y
-restauración. Requiere root existente y admite un único perfil; no es un root universal ni un
-instalador terminado para cualquier LG. La dirección visual elegida es Apple TV, con rendimiento
-como prioridad; la TV sigue con el diseño de 0.7.5.
+El piloto local tiene una interfaz inspirada en Apple TV y motor con plan, respaldo, aplicación
+y restauración. El camino de root inicial es experimental y admite un único perfil; instalar,
+optimizar y controlar la captura requiere acceso root comprobado. El rediseño es del asistente
+de PC; la 0.7.7 instalada conserva el dock del launcher y actualiza el control de luces.
 [Guía del piloto](docs/local-installer.md) · [límites del navegador](docs/browser-installer.md).
 
 ## Documentación y procedencia
 
 - [Tutorial de principio a fin](docs/tutorial.md).
-- [Asistente local: piloto con root existente](docs/local-installer.md).
+- [Asistente local, claves SSH, root experimental y luces](docs/local-installer.md).
 - [Qué falló y cómo se resolvió](docs/what-we-tried.md).
 - [Root y recuperación](docs/root-and-home.md).
 - [Limpieza ejecutada](docs/cleaning.md) y [auditoría de privacidad](docs/privacy-cleanup.md).

@@ -10,12 +10,14 @@ propia. Lo siguiente es una propuesta de producto: no describe funciones ya impl
   El dueño la probó y dijo que anda bastante bien.
 - Home y el encendido directo quedaron confirmados por el dueño en los casos documentados.
   La muestra de navegación de 0.7.4 dio unos 59,4 FPS; no garantiza ese resultado en todo uso.
-- WiZ permite control manual y acompañar el fondo. Pantalla completa tiene requisitos propios:
-  la captura anterior no acredita HDMI, contenido protegido ni que todo siga listo hoy.
+- WiZ permite control manual y acompañar el fondo. En 0.7.6 el dueño confirmó colores de
+  YouTube en seis lámparas y se verificó su restauración 6/6, incluidas dos en escena 6.
+  Persistencia de captura tras reinicio, HDMI y contenido protegido siguen pendientes.
 - Se retiraron tres apps LG removibles y se comprobaron preferencias de promociones apagadas.
   Eso no demuestra que la TV haya dejado de enviar datos ni elimina los anuncios de otras apps.
-- Un acceso configurado no prueba que su app esté instalada. La última limpieza documentada
-  no encontró Nuvio ni los paquetes de PicCap/HyperHDR; antes de ofrecerlos hay que revalidarlos.
+- Un acceso configurado no prueba que su app esté instalada. La última limpieza no encontró
+  Nuvio; no se afirma instalada. PicCap 0.5.3 e HyperHDR 22.0.1 se reinstalaron y su pipeline
+  se recuperó y probó con YouTube en 0.7.6. [Estado de captura](screen-sync.md).
 
 Fuentes del estado: [rendimiento](performance.md), [Luces](lights.md),
 [limpieza](cleaning.md) y [Home](home-takeover.md).

@@ -14,27 +14,32 @@
       <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="5" width="26" height="19" rx="5" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M11 29h10M16 24v5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><circle cx="23" cy="11" r="2" fill="currentColor"/></svg>
       Mi pantalla <span>Configuración</span>
     </a>
-    <span class="local-badge"><span class="local-dot"></span>Asistente local en tu PC</span>
+    <span class="local-badge"><span class="local-dot"></span>Conexión local · sin cuenta</span>
   </header>
   <main>
     <section class="intro" aria-labelledby="intro-title">
-      <p class="eyebrow">Una pantalla más tuya</p>
-      <h1 id="intro-title">Tu TV.<br>A tu manera.</h1>
-      <p class="intro-copy">Conectá tu LG, elegí los cambios y revisá cada paso antes de aplicarlos.</p>
-      <p class="supported-model">Para LG <strong>49UN7310PSC</strong><span></span>Firmware <strong>04.64.00</strong></p>
+      <div class="intro-content"><p class="eyebrow">Mi pantalla / Asistente</p>
+        <h1 id="intro-title">Tu TV.<br>Más tuya que nunca.</h1>
+        <p class="intro-copy">Un inicio limpio. Menos distracciones.<br>Y todo el living en sintonía.</p>
+        <p class="supported-model">LG <strong>49UN7310PSC</strong><span></span>Firmware <strong>04.64.00</strong></p>
+      </div>
+      <div class="tv-preview" aria-hidden="true"><div class="tv-screen"><div class="preview-horizon"></div><div class="preview-dock"><i></i><i></i><i></i><i></i><i></i><i></i></div></div><div class="tv-stand"></div><span class="preview-caption">El centro de tu living, a tu manera.</span></div>
     </section>
     <div class="workspace">
       <form id="setup-form" class="configuration" autocomplete="off">
         <section class="card" aria-labelledby="connection-title">
-          <div class="section-heading"><span class="step-number">1</span><div><h2 id="connection-title">Conectá tu TV</h2><p>La TV y esta PC deben estar en la misma red.</p></div></div>
-          <div class="field-row">
-            <div class="field"><label for="host">Dirección IPv4 de la TV</label><input id="host" name="host" type="text" inputmode="decimal" placeholder="Dirección de tu red local" spellcheck="false" required><small>La encontrás en los ajustes de red de la TV.</small></div>
-            <div class="field"><label for="identity">Archivo de identidad SSH</label><input id="identity" name="identity" type="text" placeholder="Ruta al archivo en esta PC" spellcheck="false" required><small>Indicá la ruta. No pegues el contenido de la clave.</small></div>
+          <div class="section-heading"><span class="step-number">01</span><div><h2 id="connection-title">Conectá tu TV</h2><p>Encendida y en la misma red que esta computadora.</p></div></div>
+          <div class="field host-field"><label for="host">Dirección IP de la TV</label><input id="host" name="host" type="text" inputmode="decimal" placeholder="Ej.: 192.168.1.20" spellcheck="false" required aria-describedby="host-help"><small id="host-help">La encontrás en Ajustes → Conexión → Red de la TV.</small></div>
+          <div class="identity-block">
+            <div class="identity-heading"><div><label for="identity">Clave SSH guardada en esta PC</label><p>Es el archivo que permite que esta computadora se conecte a tu TV.</p></div><button id="identities" type="button" class="button secondary compact">Buscar claves en esta PC</button></div>
+            <div id="identity-results" class="identity-results" hidden><label for="identity-choice">Elegí una clave encontrada</label><select id="identity-choice"><option value="">Elegí una clave…</option></select></div>
+            <div class="field"><input id="identity" name="identity" type="text" placeholder="C:\Users\TuUsuario\.ssh\mi-tv" spellcheck="false" required aria-describedby="identity-status identity-help"><small id="identity-status" role="status">Buscá una clave existente o escribí la ruta completa de su archivo.</small></div>
+            <details class="identity-help"><summary>¿Qué es este archivo y dónde lo encuentro?</summary><div id="identity-help"><p>Es un <strong>archivo de clave SSH guardado en esta computadora</strong>, creado o descargado cuando vinculaste la TV. El asistente usa su ubicación para abrir la conexión; el navegador no recibe el contenido de la clave.</p><p><strong>NO es el PIN de Developer Mode</strong>, una contraseña ni un código de la pantalla. En este campo va la ruta del archivo, por ejemplo <code>C:\Users\TuUsuario\.ssh\mi-tv</code>. No pegues el texto que hay adentro.</p><p>Para preparar el root inicial se usa la clave de <strong>Developer Mode</strong>. Para instalar, optimizar y controlar la captura, esa clave debe tener acceso <strong>root</strong> a la TV. Revisar root comprueba qué acceso tiene.</p><a href="https://github.com/frxnnk/webos-liquid-glass-launcher/blob/main/docs/local-installer.md" target="_blank" rel="noopener noreferrer">Ver cómo conectar la TV y elegir la clave ↗</a></div></details>
           </div>
-          <div class="card-footer"><p>No se guardan estos campos en el navegador.</p><button id="connect" type="button" class="button secondary">Comprobar conexión</button></div>
+          <div class="card-footer"><p>Primero verificamos el modelo y el acceso. Esta consulta no cambia la TV.</p><button id="connect" type="button" class="button primary">Comprobar conexión</button></div>
         </section>
         <section class="card" aria-labelledby="options-title">
-          <div class="section-heading"><span class="step-number">2</span><div><h2 id="options-title">Elegí qué preparar</h2><p>Todo empieza con un plan. Todavía no cambia nada.</p></div></div>
+          <div class="section-heading"><span class="step-number">02</span><div><h2 id="options-title">Hacela tuya</h2><p>Elegí los cambios. Después revisás el plan completo.</p></div></div>
           <label class="option"><input id="install" type="checkbox"><span><strong>Instalar Mi pantalla</strong><small>La app, sus fondos y el panel de luces.</small></span></label>
           <label class="option"><input id="home" type="checkbox"><span><strong>Usar Mi pantalla como inicio</strong><small>Preparar el cambio de Home con respaldo para restaurarlo.</small></span></label>
           <label class="option"><input id="privacy" type="checkbox"><span><strong>Reducir publicidad de LG</strong><small>Revisar los ajustes de privacidad y publicidad compatibles.</small></span></label>
@@ -43,13 +48,19 @@
             <label class="removal-option"><input name="removeApps" type="checkbox" value="epoxyaisports"><span>LG Sports Playbook</span></label>
             <label class="removal-option"><input name="removeApps" type="checkbox" value="lgchannels.home"><span>LG Channels</span></label>
           </details>
-          <div class="root-guide"><strong>Acceso avanzado (root)</strong><p>Es un paso manual previo para las funciones que lo requieren. Este asistente no lo obtiene automáticamente.</p><a href="https://github.com/frxnnk/webos-liquid-glass-launcher/blob/main/docs/root-and-home.md" target="_blank" rel="noopener noreferrer">Procedimiento y límites para este modelo <span aria-hidden="true">↗</span></a></div>
+          <div class="root-guide"><div class="root-heading"><strong>Acceso avanzado (root)</strong><button id="root-status" type="button" class="button secondary compact">Revisar root</button></div><p id="root-summary" role="status">Revisá si tu TV ya tiene acceso root. La comprobación no modifica el sistema ni repite el procedimiento.</p><p>Cadena automática experimental para este modelo y firmware. La validación completa en una TV original sigue pendiente. Si tu TV ya tiene root, se omite.</p><div class="root-actions"><button id="root-plan" type="button" class="button secondary compact">Preparar root</button><button id="root-apply" type="button" class="button primary compact" disabled>Aplicar root revisado</button></div><p id="root-plan-status">Preparar sólo consulta los requisitos. Aplicar ejecuta las etapas que revisaste en el panel de resultados.</p><a href="https://github.com/frxnnk/webos-liquid-glass-launcher/blob/main/docs/root-and-home.md" target="_blank" rel="noopener noreferrer">Procedimiento y límites para este modelo <span aria-hidden="true">↗</span></a></div>
           <div class="card-footer"><p>El plan indicará cualquier paso no disponible.</p><button id="prepare" type="button" class="button primary">Preparar plan <span aria-hidden="true">→</span></button></div>
+        </section>
+        <section class="card lights-card" aria-labelledby="screen-title">
+          <div class="section-heading"><span class="lights-symbol" aria-hidden="true">✦</span><div><p class="eyebrow">El living, en sintonía</p><h2 id="screen-title">Que la luz siga la escena.</h2><p>Los colores del video, también en tus lámparas WiZ.</p></div></div>
+          <div class="screen-state"><span id="screen-badge" class="status-label" data-state="unknown">Sin revisar</span><p id="screen-summary" role="status">Revisá la captura para ver si está lista. Después podés activar o desactivar la sincronización.</p></div>
+          <div class="screen-actions"><button id="screen-status" type="button" class="button secondary">Revisar captura</button><button id="screen-prepare" type="button" class="button secondary" disabled>Preparar captura</button><div class="screen-toggle" role="group" aria-label="Sincronización de luces con el video"><button id="screen-start" type="button" class="button primary" disabled>Activar</button><button id="screen-stop" type="button" class="button secondary" disabled>Desactivar</button></div></div>
+          <p class="screen-note">Preparar captura instala los componentes necesarios en la TV. Activar cambia las luces del living; Desactivar detiene la sincronización y recupera su estado guardado. “Acompañar fondo” sigue siendo un modo separado.</p>
         </section>
       </form>
       <aside class="review" aria-labelledby="review-title">
         <section class="review-card">
-          <div class="review-heading"><span class="step-number">3</span><h2 id="review-title">Revisá el plan</h2></div>
+          <div class="review-heading"><span class="step-number">03</span><h2 id="review-title">Todo, a la vista.</h2></div>
           <span id="result-status" class="status-label" data-state="unknown">Sin conectar</span>
           <p id="result-summary" class="result-summary">Acá vas a ver lo que se puede hacer en tu TV y el resultado de cada cambio.</p>
           <p id="device-status" class="device-status">Compatibilidad y acceso sin confirmar.</p>
@@ -66,7 +77,7 @@
         <p id="feedback" class="feedback" role="status" aria-live="polite">Esperando la primera consulta.</p>
       </aside>
     </div>
-    <footer class="page-footer"><span>Mi pantalla · Configuración local</span><span>Los cambios aplicados y los verificados se muestran por separado.</span></footer>
+    <footer class="page-footer"><span>Mi pantalla · Hecha para tu living.</span><span>Sin guardar claves ni direcciones en el navegador.</span></footer>
   </main>
 </body>
 </html>

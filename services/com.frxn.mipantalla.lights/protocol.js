@@ -19,7 +19,7 @@ function mac(value) {
   return /^[a-f0-9]{12}$/.test(clean) ? clean : null;
 }
 function command(state) {
-  var allowed = ['on', 'brightness', 'rgb', 'temperature'];
+  var allowed = ['on', 'brightness', 'rgb', 'temperature', 'sceneId'];
   if (!state || typeof state !== 'object' || Array.isArray(state) || !Object.keys(state).length ||
       Object.keys(state).some(function (key) { return allowed.indexOf(key) === -1; })) throw Error('Estado WiZ inválido.');
   var result = {};
@@ -39,6 +39,13 @@ function command(state) {
   if (state.temperature !== undefined) {
     if (state.rgb !== undefined || !integer(state.temperature, 2200, 6500)) throw Error('Temperatura inválida o incompatible con RGB.');
     result.temp = state.temperature;
+  }
+  if (state.sceneId !== undefined) {
+    // Restoration supports the bounded built-in scene ID space, not custom scenes.
+    if (!integer(state.sceneId, 1, 255) || state.rgb !== undefined || state.temperature !== undefined) {
+      throw Error('Escena inválida o incompatible con RGB o temperatura.');
+    }
+    result.sceneId = state.sceneId;
   }
   if (!Object.keys(result).length) throw Error('Estado WiZ inválido.');
   return result;
@@ -62,6 +69,7 @@ function device(ip, pilot, system) {
   var kind = /^ESP\d+_(?:SH)?(RGB|TW|DW)[A-Z0-9]*_/i.exec(moduleName);
   kind = kind ? kind[1].toUpperCase() : null;
   var rgb = [pilot.r, pilot.g, pilot.b];
+  var scene = pilot.sceneId !== undefined && pilot.sceneId !== null && pilot.sceneId !== 0;
   var room = typeof system.roomId === 'number' && integer(system.roomId, 0, 999999999999) ? String(system.roomId) : '';
   return {
     id: 'wiz-' + identity, name: 'WiZ ' + identity.slice(-6).toUpperCase(), ip: ip,
@@ -70,8 +78,9 @@ function device(ip, pilot, system) {
     state: {
       on: typeof pilot.state === 'boolean' ? pilot.state : null,
       brightness: integer(pilot.dimming, 1, 100) ? pilot.dimming : null,
-      rgb: rgb.every(function (v) { return integer(v, 0, 255); }) ? rgb : null,
-      temperature: integer(pilot.temp, 1000, 10000) ? pilot.temp : null
+      rgb: !scene && rgb.every(function (v) { return integer(v, 0, 255); }) ? rgb : null,
+      temperature: !scene && integer(pilot.temp, 1000, 10000) ? pilot.temp : null,
+      sceneId: integer(pilot.sceneId, 1, 255) ? pilot.sceneId : null
     }
   };
 }

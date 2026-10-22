@@ -1,8 +1,9 @@
 # Próximos pasos: rendimiento, diseño e instalación
 
 **Revisión: 2026-10-21.** Las mejoras de rendimiento y diseño siguen propuestas. El asistente
-local ya tiene un piloto implementado para root existente; no obtiene root desde cero.
-La TV sigue con Mi pantalla 0.7.5, sin nuevo rediseño instalado. No corresponde repetir su root.
+local incluye un adaptador experimental de root inicial, implementado pero no validado desde
+una TV original. La TV está en 0.7.7; el asistente de PC tiene una UI nueva y el dock conserva
+su diseño. No corresponde repetir el root ya existente.
 
 ## Primero, medir dónde se pierde tiempo
 
@@ -55,10 +56,11 @@ sería otro experimento, con compatibilidad, gráficos, entrada e instalación p
 atajo respaldado por esa guía. Esta conclusión es una inferencia de compatibilidad, no un A/B
 ejecutado con Flutter en la TV.
 
-## El piloto local ya existe; el root automático queda pendiente
+## Piloto local y root inicial experimental
 
 `npm run setup` inicia un **programa local temporal** para manejar desde Brave. Requiere Node
-18+, OpenSSH, root SSH ya configurado y la huella de la TV verificada. El único perfil admitido
+18+ y OpenSSH. Instalar o limpiar requiere root SSH y huella verificada; preparar root tiene
+requisitos y comprobaciones propios. El único perfil admitido
 es 49UN7310PSC / 04.64.00 / 5.6.2-21 / K6LP_ATSC_BR. [Guía del piloto](local-installer.md).
 
 La API local tiene acciones cerradas, sesión autenticada, validación de origen y tiempos
@@ -67,14 +69,15 @@ servidores públicos. Al terminar se cierra el compañero local; no exige un ser
 
 | Etapa | Alcance | Estado |
 | --- | --- | --- |
-| 1 | Conectar y planificar; instalar el IPK público si falta la app. | Implementado. Omite 0.7.5 existente; actualizar otra versión queda bloqueado hasta preservar configuración. |
+| 1 | Conectar y planificar; instalar el IPK público si falta la app. | Implementado. Omite 0.7.7 existente; actualizar otra versión queda bloqueado hasta preservar configuración. |
 | 2 | Home, perfil de privacidad, tres bajas LG opcionales, respaldo y restauración acotada. | Apply de privacidad idempotente y restore tras recargar probados en TV. Home, instalación y bajas no se aplicaron con el piloto. |
-| 3 | Root desde cero para una combinación comprobada de modelo y firmware. | Pendiente. No hay exploits ni reinicios automáticos en el piloto. |
+| 3 | Root desde cero para el perfil exacto. | Adaptador experimental implementado; pendiente validar la cadena desde stock y la confianza SSH humana. Omite root activo. |
 
 El motor tiene **plan / apply / restore**, con journal privado y lectura posterior; son acciones
 de la API, no comandos CLI. El plan vence en cinco minutos. Ante timeout se consulta el estado
 del destino original sin repetir la operación. Restaurar no reinstala apps retiradas ni elimina
-el paquete nuevo: esos pasos son manuales. El root y emparejamiento previos siguen siendo requisitos.
+el paquete nuevo: esos pasos son manuales. Instalar o limpiar requiere root y emparejamiento
+previos; root inicial usa un plan separado y sólo ejecuta al aplicarlo explícitamente.
 
 La suite pasó 401 pruebas y la revisión cerró sin P1/P2. `status` y `plan` funcionaron en Brave
 contra la TV; el apply de privacidad creó respaldos reales y conservó el snapshot previo.
@@ -88,11 +91,11 @@ Se revisó [SlopBro, revisión `21023d5`](https://github.com/throwaway96/slopbro
 Su flujo utiliza una computadora con Python/HTTP y SSAP, y obtiene root mediante un payload
 ejecutado en la TV. No es una página estática universal que pueda rootear cualquier LG.
 
-Para integrarlo habría que fijar y comprobar firmware, payloads, versiones y hashes, junto con
-firmas cuando existan, revisar su licencia AGPL y las obligaciones de distribución, y ensayar
-timeout, corte de red y rollback parcial. Root ya existente debe detectarse y reutilizarse.
-La investigación upstream produjo un error de firma de Developer Mode y necesitó recuperación
-manual. No se ejecuta otra vez ni existe todavía ese adaptador. [Evaluación completa](browser-installer.md).
+El adaptador ya fija perfil, fuentes y hashes, conserva el script firmado y el token regular
+de Developer Mode y omite root activo. Falta validar la cadena desde stock, confianza SSH
+inicial, interrupciones y recuperación física. La investigación upstream produjo un error de
+firma de Developer Mode y necesitó recuperación manual; ese recorrido no se repite.
+[Evaluación completa](browser-installer.md).
 
 ## Funciones que sí aportarían en el uso diario
 

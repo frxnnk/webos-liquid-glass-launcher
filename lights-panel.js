@@ -7,6 +7,7 @@
   var STORAGE_KEY = 'mi-pantalla-lights-living-v1';
   var ID = /^[A-Za-z0-9:._-]{1,64}$/;
   var TIMEOUT_MS = 8000;
+  var SCREEN_MODE_MS = 15000;
   var DISCOVER_MS = 15000;
   var LEVELS = [10, 25, 50, 75, 100];
   var COLORS = [['Ámbar', [255, 150, 40]], ['Rojo', [255, 45, 55]], ['Rosa', [255, 85, 170]], ['Violeta', [150, 75, 255]], ['Azul', [45, 115, 255]], ['Verde', [40, 210, 115]]];
@@ -65,8 +66,9 @@
     fields.forEach(function (key) { result[key] = raw[key]; });
     result.sourceFreshness = raw.sourceFreshness;
     result.reason = raw.reason;
-    result.ready = raw.ready && raw.reason === '' && raw.configured && raw.available && raw.configVerified && raw.framesVerified && raw.hardwareVerified && raw.sourceFreshness === 'fresh';
-    result.active = raw.active && result.ready;
+    var verified = raw.reason === '' && raw.configured && raw.available && raw.configVerified && raw.framesVerified && raw.hardwareVerified && raw.sourceFreshness === 'fresh';
+    result.active = raw.active && verified;
+    result.ready = raw.ready && verified && !result.active;
     return result;
   }
   function screenAllowed(view) {
@@ -186,6 +188,22 @@
       return call('setState', payload, TIMEOUT_MS).then(function (outcome) { if (outcome) merge(outcome, ids, verb); return !!outcome; });
     }
 
+    function reviewScreen(epoch, afterMode) {
+      view.screen = emptyScreen();
+      start('Revisando la captura…');
+      return call('screenStatus', { ids: view.selected.slice() }, TIMEOUT_MS).then(function (outcome) {
+        if (!outcome) return false;
+        view.busy = '';
+        if (epoch !== modeEpoch) { changed(); return false; }
+        view.screen = outcome.timeout ? emptyScreen('timeout') : outcome.error ? emptyScreen('protocol-error') : cleanScreen(outcome.result);
+        if (view.screen.active) confirmedMode('screen');
+        view.message = afterMode && (outcome.timeout || outcome.error || view.screen.reason === 'protocol-error') ?
+          'Modo confirmado; captura sin confirmar. Podés revisar la captura o volver a Manual.' : screenNote(view.screen);
+        changed();
+        return view.screen.ready;
+      });
+    }
+
     return {
       view: view,
       targets: targets,
@@ -273,19 +291,7 @@
       white: function (kelvin) { return setState({ temperature: kelvin }, 'cambiar el blanco'); },
       screenStatus: function () {
         if (view.phase !== 'ready' || view.busy) return Promise.resolve(false);
-        var epoch = modeEpoch;
-        view.screen = emptyScreen();
-        start('Revisando la captura…');
-        return call('screenStatus', { ids: view.selected.slice() }, TIMEOUT_MS).then(function (outcome) {
-          if (!outcome) return false;
-          view.busy = '';
-          if (epoch !== modeEpoch) { changed(); return false; }
-          view.screen = outcome.timeout ? emptyScreen('timeout') : outcome.error ? emptyScreen('protocol-error') : cleanScreen(outcome.result);
-          if (view.screen.active) confirmedMode('screen');
-          view.message = screenNote(view.screen);
-          changed();
-          return view.screen.ready;
-        });
+        return reviewScreen(modeEpoch, false);
       },
       setMode: function (mode) {
         var ids = targets();
@@ -299,7 +305,7 @@
         modePending = true;
         start('Cambiando el modo…');
         // El backend valida la captura y restaura el estado base antes de confirmar Manual.
-        return call('setMode', { mode: mode, source: mode === 'screen' ? 'screen' : 'wallpaper', ids: ids.slice() }, TIMEOUT_MS).then(function (outcome) {
+        return call('setMode', { mode: mode, source: mode === 'screen' ? 'screen' : 'wallpaper', ids: ids.slice() }, mode === 'screen' || mode === 'manual' ? SCREEN_MODE_MS : TIMEOUT_MS).then(function (outcome) {
           if (epoch !== modeEpoch) return false;
           modePending = false;
           if (!outcome) return false;
@@ -307,6 +313,7 @@
           var ok = !!(outcome.result && outcome.result.mode === mode);
           if (outcome.timeout && mode !== 'manual' && previousMode !== 'screen') view.mode = null;
           else if (ok) confirmedMode(mode);
+          if (ok && (mode === 'screen' || mode === 'manual')) return reviewScreen(epoch, true).then(function () { return true; });
           view.message = ok ? '' : outcome.timeout ? (mode === 'manual' && view.mode !== 'screen' ? 'El seguimiento local está detenido; el servicio no confirmó el modo a tiempo.' : 'Sin respuesta a tiempo: el modo actual es desconocido.') : 'El servicio no confirmó el cambio de modo' + (outcome.error ? ': ' + outcome.error : '') + '.';
           changed();
           return ok;

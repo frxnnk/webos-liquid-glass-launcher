@@ -21,7 +21,10 @@ function stateOf(state) {
   if (!state || typeof state.on !== 'boolean' || !integer(state.brightness, 1, 100)) throw failure('SCREEN_BASELINE_INVALID');
   var rgb = state.rgb !== undefined && state.rgb !== null;
   var temp = state.temperature !== undefined && state.temperature !== null;
-  if ((rgb && temp) || (state.on && !rgb && !temp)) throw failure('SCREEN_BASELINE_INVALID');
+  var scene = state.sceneId !== undefined && state.sceneId !== null;
+  if ((rgb ? 1 : 0) + (temp ? 1 : 0) + (scene ? 1 : 0) > 1 || (state.on && !rgb && !temp && !scene)) {
+    throw failure('SCREEN_BASELINE_INVALID');
+  }
   var result = {on:state.on, brightness:state.brightness};
   if (rgb) {
     if (!Array.isArray(state.rgb) || state.rgb.length !== 3 || !integer(state.rgb[0], 0, 255) ||
@@ -31,6 +34,10 @@ function stateOf(state) {
   if (temp) {
     if (!integer(state.temperature, 2200, 6500)) throw failure('SCREEN_BASELINE_INVALID');
     result.temperature = state.temperature;
+  }
+  if (scene) {
+    if (!integer(state.sceneId, 1, 255)) throw failure('SCREEN_BASELINE_INVALID');
+    result.sceneId = state.sceneId;
   }
   return result;
 }

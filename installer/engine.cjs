@@ -4,10 +4,12 @@ const os=require('node:os');
 const path=require('node:path');
 const crypto=require('node:crypto');
 const steps=require('./steps.cjs');
+const {ACTIONS,READ_ACTIONS,FEATURE_ACTIONS,MUTATING_ACTIONS}=require('./actions.cjs');
 const ID=/^[a-f0-9]{32}$/;
 function object(value){return value!==null&&typeof value==='object'&&!Array.isArray(value);}
 function createEngine(deps={}) {
   const fs=deps.journalFs||hostFs;
+  const features=require('./features.cjs').createFeatures(deps);
   const plans=new Map(),now=deps.now||Date.now;
   const journalDir=deps.journalDir||path.join(os.homedir(),'.mi-pantalla-installer');
   let mutating=false,activeTarget=null;
@@ -44,7 +46,7 @@ function createEngine(deps={}) {
   }
   function stepList(opts,snapshot,status='planned') {
     const out=[];
-    if(opts.install)out.push({id:'install',label:'Instalar Mi pantalla 0.7.5',status:snapshot.app&&snapshot.app.version===steps.profile.app.version?'skipped':status});
+    if(opts.install)out.push({id:'install',label:'Instalar Mi pantalla '+steps.profile.app.version,status:snapshot.app&&snapshot.app.version===steps.profile.app.version?'skipped':status});
     if(opts.home)out.push({id:'home',label:'Configurar Home y arranque',status});
     if(opts.privacy)out.push({id:'privacy',label:'Reducir anuncios y reportes',status});
     for(const app of opts.removeApps)out.push({id:'remove:'+app,label:'Retirar '+app,status:snapshot.apps.some(a=>a.id===app)?status:'skipped'});
@@ -174,8 +176,13 @@ function createEngine(deps={}) {
     }catch(ignored){record.phase='unconfirmed';try{writeJournal(record,false);}catch(unused){}return result('restore','partial',['RESTORE_UNCONFIRMED'],{backupId:record.id});}
   }
   async function runAction(action,payload) {
-    if(!['status','plan','apply','restore'].includes(action))return result(String(action).slice(0,16),'blocked',['ACTION_INVALID']);
-    if(mutating&&action!=='status')return result(action,'blocked',['BUSY']);
+    if(!ACTIONS.includes(action))return result(String(action).slice(0,16),'blocked',['ACTION_INVALID']);
+    if(mutating&&!READ_ACTIONS.includes(action))return result(action,'blocked',['BUSY']);
+    if(FEATURE_ACTIONS.includes(action)){
+      const mutation=MUTATING_ACTIONS.includes(action);if(mutation)mutating=true;
+      try{return await features.runAction(action,payload);}catch(ignored){return result(action,'blocked',['ACTION_FAILED']);}
+      finally{if(mutation)mutating=false;}
+    }
     if(action==='status')return status(payload);if(action==='plan')return plan(payload);
     mutating=true;try{return await (action==='apply'?apply(payload):restore(payload));}catch(ignored){return result(action,'blocked',['ACTION_FAILED']);}finally{mutating=false;activeTarget=null;}
   }

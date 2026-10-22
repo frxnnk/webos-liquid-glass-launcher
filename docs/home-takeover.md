@@ -147,7 +147,7 @@ foco, arranque ni standby de la TV.
 
 ## Instalación y activación
 
-El IPK 0.7.5 está instalado; root, HBC y el hook ya estaban operativos. No hay que repetir root ni HBC
+El IPK 0.7.7 está instalado; root, HBC y el hook ya estaban operativos. No hay que repetir root ni HBC
 para comprobar esta versión. Como referencia de recuperación, se puede usar el instalador de
 Developer Mode o `luna-send` en la TV. Si `/dev/install` responde
 `Unknown method "install" for category "/dev"`, reiniciar el instalador después de habilitar

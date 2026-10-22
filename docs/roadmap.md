@@ -1,9 +1,10 @@
 # Roadmap
 
 Estado al **2026-10-21**. El dueño probó **0.7.4** y confirmó que anda bastante bien.
-La **0.7.5** agrega acceso a Homebrew Channel y actualiza documentación de privacidad e
-instalación; su estado de despliegue se informa en el README. Este documento separa funciones
-existentes, pruebas concretas y propuestas.
+La **0.7.7 está instalada**, con confirmación efectiva de salida LED y estado corregido en la
+UI; su botón Pantalla completa sigue pendiente de prueba física. En 0.7.6, desde PC, el dueño
+confirmó colores de YouTube en seis WiZ y restauración 6/6. La suite actual pasó **555/555 pruebas**.
+Este documento separa funciones existentes, pruebas concretas y propuestas.
 
 ## Entregado
 
@@ -33,7 +34,8 @@ con Codex al fallar la autenticación del delegador; no atribuir a Opus ese camb
 - Actualizar el tutorial al flujo actual: Developer Mode, compilación, verificación, instalación,
   configuración privada, Home manual con respaldo/guardia y reversión antes de desinstalar.
 - Explicar los límites de limpiar apps, desactivar promociones y demostrar tráfico saliente.
-- Evaluar instalación desde browser, sin presentar un prototipo como algo implementado.
+- Implementar el asistente local para Brave y registrar por separado las operaciones probadas
+  y la cadena experimental de root; no presentar el flujo desde una TV original como validado.
 - Publicar `privacy-audit.cjs` como diagnóstico CLI de solo lectura con root ya disponible;
   no instala ni modifica ajustes; es independiente del asistente local.
 - Mantenimiento posterior, con la 0.7.5 instalada y sin nuevo IPK: retiradas Apple Music,
@@ -46,29 +48,42 @@ con Codex al fallar la autenticación del delegador; no atribuir a Opus ese camb
 ## Piloto del asistente local: programa de PC
 
 `npm run setup` ya inicia interfaz y motor local con `status`, `plan`, `apply` y `restore` como
-acciones internas, no flags CLI. Node 18+ y OpenSSH, root previo y huella verificada; admite
+acciones internas, no flags CLI. El módulo de instalación y limpieza usa Node 18+, OpenSSH,
+root previo y huella verificada; admite
 únicamente 49UN7310PSC / 04.64.00 / 5.6.2-21 / K6LP_ATSC_BR. Instala el IPK público si la app
-falta, omite 0.7.5 existente y bloquea actualizar otra versión hasta resolver preservación.
+falta, omite 0.7.7 existente y bloquea actualizar otra versión hasta resolver preservación.
 Home, siete preferencias, dos permisos RDX y tres bajas LG opcionales tienen respaldo y lectura
 posterior. Hay journal local/TV y restauración acotada; reinstalar apps o desinstalar el paquete
-nuevo siguen siendo pasos manuales. Pasaron 401 pruebas y la revisión cerró sin P1/P2; status,
+nuevo siguen siendo pasos manuales. En la validación inicial del piloto pasaron 401 pruebas y la
+revisión cerró sin P1/P2; status,
 plan y apply idempotente de privacidad se probaron en Brave contra la TV, con respaldo real.
 Después de recargar se recuperó ese respaldo y se restauró: otra lectura SSH confirmó journal
 `restored` y snapshot completo igual al inicial. Home, instalación y bajas no se aplicaron con
 el piloto; no heredan las pruebas físicas del procedimiento manual. Faltan instalación real
-del IPK público, root desde cero y arranque físico con hooks nuevos.
+del IPK público, la cadena completa desde una TV original y arranque físico con hooks nuevos.
 [Guía y estado de verificación](local-installer.md).
 
-La TV sigue en 0.7.5. Apple TV es la dirección visual elegida y rendimiento la prioridad para
-una etapa posterior; no se instaló un nuevo diseño. Root desde cero no está automatizado:
-la investigación upstream exigió recuperar manualmente un error de firma de Developer Mode.
+La TV está en 0.7.7. El asistente de PC tiene una UI inspirada en Apple TV; el dock de la TV
+conserva su diseño y rendimiento como prioridad. Persistencia de captura tras reinicio, HDMI
+y DRM siguen pendientes.
+
+El adaptador de root **ya está implementado como experimental**, sólo para el perfil anterior
+con build `jhericurl-jimna`. Consulta root y Developer Mode, fija fuentes y hashes, prepara un
+bootstrap propio, respalda, provisiona HBC y verifica accesos posteriores. Conserva el script
+firmado y el token regular de Developer Mode, evitando el tramo upstream que había exigido
+recuperación manual. Una reserva exclusiva por IP impide repetir cadenas paralelas o inciertas.
+
+El diagnóstico real y el plan en la TV ya rooteada **omiten el bootstrap**. No se ejecutó esta
+cadena desde una TV original ni se repitió el root de la TV actual. Siguen pendientes la primera
+confianza de huellas SSH desde la UI y la prueba física del flujo nuevo; no hay downgrade,
+soporte universal ni unroot verificado. [Alcance y recuperación del adaptador](root-automation.md).
 
 ## Prioridad 1: recuperación y mantenimiento verificables
 
 1. Probar restore de Home y la guardia con la app ausente durante un arranque real, con acceso
    SSH y físico de recuperación. No usar el resultado de `app-present` como prueba de ese caso.
 2. Cubrir actualización de IPK con configuración privada y roles ya instalados, fallos de red
-   y rollback parcial. El piloto omite 0.7.5 presente y bloquea actualizar otra versión; la
+   y rollback parcial. El piloto omite 0.7.7 presente y bloquea actualizar otra versión; la
    preservación completa de una actualización sigue siendo un procedimiento manual.
 3. Repetir Home desde varias apps, foco posterior, Home repetido/mantenido y otros ciclos de
    standby/Quick Start. La confirmación de YouTube y apagado de 20 s no acredita todos esos casos.
@@ -115,10 +130,12 @@ el movimiento llega al detenerse. Animar vidrio durante cada flecha se descartó
 
 Cerrar el piloto local con ensayos de instalación ausente, restore, timeout y recuperación
 en hardware. El programa y la UI ya existen; no equivalen a un instalador terminado para una
-TV original. El paquete público 0.7.5 está publicado, sin configuración del hogar y con hash
-fijado. Actualizaciones entre versiones y un adaptador de root desde cero quedan pendientes.
+TV original. El paquete público 0.7.7 está publicado, sin configuración del hogar y con hash
+fijado. Quedan pendientes las actualizaciones entre versiones y acreditar en una TV original
+el adaptador de root experimental ya implementado, incluida la confianza inicial de huellas SSH.
 Conservar acciones cerradas de loopback; no agregar una shell pública. Browser-only no reemplaza
-SSH ni proporciona root universal. [Comparación y fuentes](browser-installer.md).
+SSH ni proporciona root universal. [Comparación y fuentes](browser-installer.md) ·
+[cadena de root por modelo](root-automation.md).
 
 ## Funciones para evaluar
 

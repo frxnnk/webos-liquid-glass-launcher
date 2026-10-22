@@ -12,6 +12,26 @@ seis lámparas con colores de pantalla y la vuelta a Manual las apagó y restaur
 pidió reintentar. HDMI, contenido protegido y persistencia de Pantalla completa tras reinicio
 siguen pendientes. [Estado de la integración](screen-sync.md).
 
+## Estado actual: 0.7.7
+
+La 0.7.7 está instalada y corrige la confirmación de `LEDDEVICE` después de una orden
+encolada y el estado activo/preparado de la UI de la TV. Pasó **555/555 pruebas**; el botón
+Pantalla completa todavía requiere prueba física con esta versión. El panel hace una sola
+consulta posterior a cada cambio confirmado a Pantalla completa o Manual; ante error conserva
+el modo confirmado y permite recuperar con Manual. [Detalle y límites](screen-sync.md).
+
+### Checkpoint 0.7.6 desde el asistente de PC
+
+PicCap 0.5.3 e HyperHDR 22.0.1 se recuperaron con el perfil de las seis WiZ y su orden original.
+El dueño confirmó que siguen los colores de YouTube. Al desactivar, una lectura independiente
+comprobó **6/6 estados originales**, incluidos dos en escena 6. La suite de ese checkpoint pasó
+**541/541 pruebas**; pruebas locales y confirmación física son evidencias distintas.
+Boot de captura, HDMI y contenido protegido siguen pendientes.
+
+La restauración admite `sceneId` entero de 1 a 255 como alternativa exclusiva a RGB o temperatura.
+Se probó escena 6; escenas personalizadas y Rhythm quedan fuera de alcance.
+[Preparar, activar, desactivar y recuperar](screen-sync.md).
+
 ## Elegir y controlar las lámparas
 
 ### Panel 0.7.4
@@ -28,7 +48,7 @@ siguen requiriendo una acción explícita. La captura conserva sus comprobacione
 
 Se verificó la vista en Brave a 1080p y 720p con un cliente simulado, incluidas diez lámparas.
 En la TV se vieron las seis guardadas y su brillo común. No se enviaron cambios de iluminación
-durante esa comprobación; la aceptación visual del rework por parte del dueño queda pendiente.
+durante esa comprobación. Más tarde el dueño confirmó buen funcionamiento general de 0.7.4.
 
 ### Controles
 
@@ -122,11 +142,12 @@ npm exec --yes --package=@webos-tools/cli@3.2.6 -- ares-package dist services/co
 python scripts/verify_package.py
 ```
 
-El verificador compara tanto los archivos de `dist/` como los 17 archivos del servicio; si existe
-`screen-config.json`, también exige que coincida. El IPK 0.6.0 verificado tiene 56 archivos y no
-incluye ese archivo privado opcional. La activación y la restauración de Pantalla completa se
-comprobaron físicamente; el arranque de Home se verificó en frío, mientras que pulsar Home, HDMI,
-standby y persistencia de captura tras reinicio siguen pendientes.
+El verificador compara tanto los archivos de `dist/` como los del servicio; si existe
+`screen-config.json`, también exige que coincida. El paquete histórico 0.6.0 verificado tenía
+56 archivos y no incluía ese archivo privado opcional. El público actual 0.7.7 también tiene
+56 archivos y excluye la configuración del hogar. [Pin de la descarga](local-installer.md).
+La captura y restauración actuales se detallan arriba. Home y encendido directo se confirmaron
+en los casos documentados de 0.7.2; eso no acredita persistencia de captura, HDMI ni DRM.
 No publiques un IPK que incluya tu configuración del hogar. El código del servicio solo usa
 módulos de Node disponibles en webOS 5; no agrega dependencias npm.
 

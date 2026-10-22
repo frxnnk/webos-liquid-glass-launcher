@@ -20,7 +20,12 @@ module.exports = function createScreenControl(lamps, options) {
         var pending = session.pending();
         status.pending = !!pending;
         status.phase = pending ? pending.phase : null;
-        if (pending) { status.ready = false; status.reason = 'restore-pending'; }
+        status.active = !!(pending && pending.phase === 'active' && Array.isArray(pending.ids) &&
+          pending.ids.length === ids.length && pending.ids.every(function (id) { return ids.indexOf(id) !== -1; }) &&
+          status.configured === true && status.available === true && status.configVerified === true &&
+          status.hardwareVerified === true && status.framesVerified === true &&
+          status.sourceFreshness === 'fresh' && status.outputEnabled === true);
+        if (pending) { status.ready = false; status.reason = status.active ? '' : 'restore-pending'; }
         return status;
       });
     }

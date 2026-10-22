@@ -32,12 +32,13 @@ function safeParameters(method, params) {
     return {};
   }
   if (method !== 'setPilot' || Object.keys(params).some(function (key) {
-    return ['state','dimming','r','g','b','temp'].indexOf(key) === -1;
+    return ['state','dimming','r','g','b','temp','sceneId'].indexOf(key) === -1;
   })) throw Error('Método WiZ inválido.');
   var state = {};
   if (params.state !== undefined) state.on = params.state;
   if (params.dimming !== undefined) state.brightness = params.dimming;
   if (params.temp !== undefined) state.temperature = params.temp;
+  if (params.sceneId !== undefined) state.sceneId = params.sceneId;
   if (params.r !== undefined || params.g !== undefined || params.b !== undefined) state.rgb = [params.r,params.g,params.b];
   return protocol.command(state);
 }
