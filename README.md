@@ -1,9 +1,14 @@
 # Mi pantalla
 
+> **Incidente abierto en 0.7.7 prerelease:** después de confirmar colores de YouTube en las
+> luces, volver con Home dejó la pantalla negra, también tras standby. La recuperación visual
+> sigue pendiente y la causa no está aislada. La captura está detenida; no volver a activarla
+> durante la recuperación. [Estado, medidas tomadas y límites](docs/incidents/2026-10-21-black-screen.md).
+
 Un inicio personalizado para LG webOS: tus apps, fotos y el control del living en una pantalla
 Liquid Glass que se maneja con el control remoto.
 
-**0.7.7 prerelease instalada; confirmación visual de Pantalla completa pendiente.** Conserva un acceso a Homebrew Channel y un auditor
+**0.7.7 prerelease instalada, con el incidente conocido indicado arriba.** Conserva un acceso a Homebrew Channel y un auditor
 de privacidad y recursos de sólo lectura. Los ocho accesos entran a 1080p y 720p. El acceso
 abrió Homebrew Channel en la TV; no instala paquetes ni obtiene root por sí mismo.
 
@@ -13,13 +18,15 @@ incluidas las dos en escena: el estado se contrastó de forma independiente con 
 
 Después, el botón de la TV expuso una carrera: HyperHDR aceptaba una orden encolada antes de
 confirmar `LEDDEVICE`. La **0.7.7** espera el estado efectivo y separa captura activa de preparada
-en la UI. Tras activar o volver a Manual hace una sola consulta de estado. **Todavía no se
-confirmó visualmente este arreglo desde el botón Pantalla completa de la TV.**
+en la UI. Tras activar o volver a Manual hace una sola consulta de estado. El dueño confirmó
+que las luces siguen los colores del video; después apareció el incidente de pantalla negra.
+Esa confirmación no acredita estabilidad ni restauración de luces con 0.7.7.
 
 Checkpoint de telemetría posterior: sesión nativa `active`, salida LED encendida y frames frescos
 con YouTube en primer plano a unos **28,5 FPS**. Dos lecturas UDP separadas 3 s encontraron las
 seis WiZ encendidas; tres cambiaron RGB/brillo. La sesión apareció tras solicitar la prueba,
-sin activarla desde PC. Falta confirmación visual del dueño; no acredita escenas, latencia ni Stop de 0.7.7.
+sin activarla desde PC. El dueño confirmó los colores después; esto no acredita escenas,
+latencia ni Stop de 0.7.7. La recuperación visual del incidente sigue pendiente.
 
 [**Tutorial completo**](docs/tutorial.md) · [Privacidad y limpieza](docs/privacy-cleanup.md) ·
 [Funciones futuras](docs/product-vision.md) · [Instalador desde el navegador](docs/browser-installer.md)
