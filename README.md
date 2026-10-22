@@ -1,9 +1,11 @@
 # Mi pantalla
 
 > **Incidente abierto en 0.7.7 prerelease:** después de confirmar colores de YouTube en las
-> luces, volver con Home dejó la pantalla negra, también tras standby. La recuperación visual
-> sigue pendiente y la causa no está aislada. La captura está detenida; no volver a activarla
-> durante la recuperación. [Estado, medidas tomadas y límites](docs/incidents/2026-10-21-black-screen.md).
+> luces, volver con Home dejó la pantalla negra, también tras standby. El dueño confirmó la
+> imagen recuperada después de desenchufar 60 s. Las seis luces se restauraron por recuperación
+> offline y lectura independiente exacta 6/6; la causa sigue sin aislar. PicCap está detenido
+> e HyperHDR apagado; no volver a activar la captura.
+> [Estado, medidas tomadas y límites](docs/incidents/2026-10-21-black-screen.md).
 
 Un inicio personalizado para LG webOS: tus apps, fotos y el control del living en una pantalla
 Liquid Glass que se maneja con el control remoto.
@@ -26,7 +28,10 @@ Checkpoint de telemetría posterior: sesión nativa `active`, salida LED encendi
 con YouTube en primer plano a unos **28,5 FPS**. Dos lecturas UDP separadas 3 s encontraron las
 seis WiZ encendidas; tres cambiaron RGB/brillo. La sesión apareció tras solicitar la prueba,
 sin activarla desde PC. El dueño confirmó los colores después; esto no acredita escenas,
-latencia ni Stop de 0.7.7. La recuperación visual del incidente sigue pendiente.
+latencia ni Stop normal de 0.7.7. La imagen se recuperó tras desenchufar 60 s y una recuperación
+offline posterior restauró las seis luces al baseline exacto. Un único Home con ambos
+capturadores apagados llegó a Mi pantalla según foreground; falta confirmación visual del dueño.
+La causa y una corrección permanente siguen pendientes.
 
 [**Tutorial completo**](docs/tutorial.md) · [Privacidad y limpieza](docs/privacy-cleanup.md) ·
 [Funciones futuras](docs/product-vision.md) · [Instalador desde el navegador](docs/browser-installer.md)
