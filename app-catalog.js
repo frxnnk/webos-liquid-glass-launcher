@@ -2,6 +2,25 @@
   'use strict';
   var MAX_APPS = 512;
   var FALLBACK = 'assets/logos/app.svg';
+  // LG marca estas apps de sistema como visible:false (no salen en su lista) pero sirven desde el inicio.
+  // Se permiten solo por id; lo demás que LG oculta (anuncios, fábrica, ejemplos) sigue fuera.
+  // Sin Software Update ni Installation: actualizar el firmware quitaría el root. HDMI 4 queda fuera
+  // porque muchos modelos tienen tres puertos; HDMI 1 ya es un acceso propio.
+  var SYSTEM = {
+    'com.palm.app.settings': { title: 'Configuración' },
+    'com.webos.app.livetv': { title: 'TV en vivo' },
+    'com.webos.app.livemenu': { title: 'Guía de TV' },
+    'com.webos.app.recordings': { title: 'Grabaciones' },
+    'com.webos.app.notificationcenter': { title: 'Notificaciones' },
+    'com.webos.app.miracast': { title: 'Compartir pantalla' },
+    'airplay': { title: 'AirPlay' },
+    'com.webos.app.self-diagnosis': { title: 'Ayuda rápida' },
+    'com.webos.app.tvuserguide': { title: 'Guía del usuario' },
+    'com.webos.app.home': { title: 'Home de LG' },
+    'com.webos.app.hdmi2': { title: 'HDMI 2', kind: 'input' },
+    'com.webos.app.hdmi3': { title: 'HDMI 3', kind: 'input' }
+  };
+  function systemEntry(id) { return typeof id === 'string' && Object.prototype.hasOwnProperty.call(SYSTEM, id) ? SYSTEM[id] : null; }
 
   function validId(value) {
     return typeof value === 'string' && /^[a-z0-9][a-z0-9._-]{0,127}$/i.test(value);
@@ -25,14 +44,15 @@
   function extra(entry, stored) {
     if (!entry || typeof entry !== 'object') return null;
     var id = stored ? entry.appId : entry.id;
-    var title = label(entry.title);
+    var system = systemEntry(id);
+    var title = system ? system.title : label(entry.title);
     if (!validId(id) || !title) return null;
     if (stored && entry.key !== 'app-' + id) return null;
-    if (!stored && (entry.visible === false || entry.noWindow === true)) return null;
+    if (!stored && (entry.noWindow === true || (entry.visible === false && !system))) return null;
     return {
       key: 'app-' + id, appId: id, title: title,
       logo: icon(stored ? entry.logo : entry.icon, stored ? null : entry.folderPath),
-      color: '#a8b5ce', tagline: 'Aplicación instalada', kind: 'app',
+      color: '#a8b5ce', tagline: system ? 'Sistema de LG' : 'Aplicación instalada', kind: system && system.kind || 'app',
       visible: stored ? entry.visible !== false : false, catalogApp: true
     };
   }

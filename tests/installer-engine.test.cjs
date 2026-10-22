@@ -11,7 +11,7 @@ function state(extra={}) {
     system:{modelName:'49UN7310PSC',firmwareVersion:'04.64.00',sdkVersion:'5.6.2',boardType:'K6LP_ATSC_BR'},
     general:{defaultApps:{home:'com.webos.app.home',browser:'keep-this'},homePromotion:'on',screenSaverAd:'on',adCookie:'on',customizedAd:'off'},
     option:{livePlus:'on',livePromotion:'on',webOSPromotionVideo:'on'},rdxd:{analyticsLog:true,crashLog:true},
-    app:{id:'com.frxn.mipantalla',version:'0.7.12'},apps:[{id:'webos.day',systemApp:false,removable:true,version:'1.0'}]},extra);
+    app:{id:'com.frxn.mipantalla',version:'0.7.13'},apps:[{id:'webos.day',systemApp:false,removable:true,version:'1.0'}]},extra);
 }
 function fixture(initial=state(),overrides={}) {
   assert.equal(typeof api.createEngine,'function','engine factory must exist');

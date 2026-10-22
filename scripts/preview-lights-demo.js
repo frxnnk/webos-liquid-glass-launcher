@@ -2,6 +2,7 @@
 // Simula el servicio de luces para dibujar el panel completo, sin enviar nada a lámparas reales.
 // Estados de Auto para ver cada variante: &auto=off|idle|waiting|syncing|stopping|error|starting
 // Sin lámparas WiZ: &lamps=none
+// Catálogo de apps de una TV real en Personalizar: &apps=tv
 (function () {
   'use strict';
   // La demo parte siempre de la selección de lights-config.js, sin restos de otras pruebas.
@@ -22,6 +23,17 @@
   });
   var mode = autoState === 'syncing' ? 'screen' : 'manual';
   var auto = { available: true, enabled: autoState !== 'off', state: autoState, reason: autoState === 'error' ? 'auth-required' : '', apps: ['youtube.leanback.v4'] };
+  // &apps=tv: catálogo de apps simulado (ids y títulos reales de una LG 49UN7310PSC) para ver Personalizar.
+  if (params.get('apps') === 'tv' && window.createTVBridge) {
+    var sample = [{"id":"airplay","title":"AirPlay","visible":false},{"id":"amazon","title":"Prime Video","visible":true},{"id":"amazon.alexa.view","title":"Amazon Alexa","visible":true},{"id":"com.disney.disneyplus-prod","title":"Disney+","visible":true},{"id":"com.frxn.mipantalla","title":"Mi pantalla","visible":true},{"id":"com.palm.app.settings","title":"Configuración","visible":false},{"id":"com.palmdts.devmode","title":"Developer Mode","visible":true},{"id":"com.pplus.webapp.prod-intl","title":"Paramount+","visible":true},{"id":"com.wbd.stream","title":"HBO Max","visible":true},{"id":"com.webos.app.acrhdmi1","title":"LivePlus","visible":false},{"id":"com.webos.app.adoverlay","title":"Ad Overlay App","visible":false},{"id":"com.webos.app.browser","title":"Navegador web","visible":true},{"id":"com.webos.app.discovery","title":"LG Content Store","visible":true},{"id":"com.webos.app.factorywin","title":"QML Factorywin","visible":false},{"id":"com.webos.app.hdmi2","title":"HDMI2","visible":false},{"id":"com.webos.app.hdmi3","title":"HDMI3","visible":false},{"id":"com.webos.app.hdmi4","title":"HDMI4","visible":false},{"id":"com.webos.app.home","title":"Home","visible":false},{"id":"com.webos.app.homeconnect","title":"Panel del hogar","visible":true},{"id":"com.webos.app.livemenu","title":"Guía de TV","visible":false},{"id":"com.webos.app.livetv","title":"TV en Vivo","visible":false},{"id":"com.webos.app.miracast","title":"Screen Share","visible":false},{"id":"com.webos.app.music","title":"Música","visible":true},{"id":"com.webos.app.notificationcenter","title":"Notificaciones","visible":false},{"id":"com.webos.app.photovideo","title":"Foto & Vídeo","visible":true},{"id":"com.webos.app.recordings","title":"Grabaciones","visible":false},{"id":"com.webos.app.self-diagnosis","title":"Ayuda rápida","visible":false},{"id":"com.webos.app.softwareupdate","title":"Software Update","visible":false},{"id":"com.webos.app.sportsteamsettings","title":"Alerta de Deportes","visible":true},{"id":"com.webos.app.tvuserguide","title":"Guía del usuario","visible":false},{"id":"io.strem.tv","title":"Stremio","visible":true},{"id":"netflix","title":"Netflix","visible":true},{"id":"ooo.lew.lifesgoodwithoutspying","title":"Life's Good Without Spying","visible":true},{"id":"org.webosbrew.hbchannel","title":"Homebrew Channel","visible":true},{"id":"org.webosbrew.hyperhdr.loader","title":"HyperHDR","visible":true},{"id":"org.webosbrew.piccap","title":"PicCap","visible":true},{"id":"space.nuvio.webos","title":"Nuvio TV","visible":true},{"id":"spotify-beehive","title":"Spotify – Música y podcasts","visible":true},{"id":"telefonica.argentina","title":"Movistar TV","visible":true},{"id":"tv.twitch.tv.starshot.lg","title":"Twitch","visible":true},{"id":"youtube.leanback.v4","title":"YouTube","visible":true}];
+    window.LAUNCHER_DEMO_APPS = true;
+    var createBridge = window.createTVBridge;
+    window.createTVBridge = function () {
+      var bridge = createBridge.apply(this, arguments);
+      bridge.listApps = function () { return Promise.resolve(JSON.parse(JSON.stringify(sample))); };
+      return bridge;
+    };
+  }
   function copy(value) { return JSON.parse(JSON.stringify(value)); }
   function later(value) { return new Promise(function (resolve) { setTimeout(function () { resolve(copy(value)); }, 60); }); }
   var client = {

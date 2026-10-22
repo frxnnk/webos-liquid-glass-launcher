@@ -144,3 +144,40 @@ test('oversized native paths cannot expand persisted catalog metadata without a 
   assert.equal(items[0].logo,'assets/logos/app.svg');
   assert.ok(JSON.stringify(catalog.serialize(items)).length < 512);
 });
+
+test('useful LG system apps hidden by LG are offered, renamed and kept out of the home until added', () => {
+  const catalog = load();
+  const hidden = id => ({ id, title: id, visible: false, icon: '/usr/palm/applications/' + id + '/icon.png' });
+  const items = plain(catalog.merge(catalog.restore(defaults(), null), [
+    hidden('com.palm.app.settings'), hidden('com.webos.app.livetv'), hidden('com.webos.app.home'), hidden('com.webos.app.hdmi2'),
+    hidden('com.webos.app.hdmi3'), hidden('com.webos.app.adoverlay'), hidden('com.webos.app.factorywin'),
+    hidden('com.webos.app.softwareupdate'), hidden('com.webos.app.installation'), hidden('com.webos.app.hdmi4'), hidden('constructor')
+  ]));
+  const added = items.filter(item => item.catalogApp);
+  assert.deepEqual(added.map(item => [item.appId, item.title, item.kind, item.visible, item.tagline]), [
+    ['com.palm.app.settings', 'Configuración', 'app', false, 'Sistema de LG'],
+    ['com.webos.app.livetv', 'TV en vivo', 'app', false, 'Sistema de LG'],
+    ['com.webos.app.home', 'Home de LG', 'app', false, 'Sistema de LG'],
+    ['com.webos.app.hdmi2', 'HDMI 2', 'input', false, 'Sistema de LG'],
+    ['com.webos.app.hdmi3', 'HDMI 3', 'input', false, 'Sistema de LG']
+  ]);
+});
+
+test('a hidden system app that is not on the list, and any noWindow app, stay excluded; the TV title never overrides ours', () => {
+  const catalog = load();
+  const items = plain(catalog.merge(catalog.restore(defaults(), null), [
+    { id: 'com.webos.app.livetv', title: 'ANUNCIO <b>x</b>', visible: false, noWindow: true },
+    { id: 'com.palm.app.settings', title: '<img src=x onerror=alert(1)>', visible: false },
+    { id: 'com.webos.app.acroverlay', title: 'LivePlus', visible: false }
+  ]));
+  assert.deepEqual(items.filter(item => item.catalogApp).map(item => item.title), ['Configuración']);
+});
+
+test('stored system apps keep their kind and name across a restart without a live inventory', () => {
+  const catalog = load();
+  const merged = catalog.merge(catalog.restore(defaults(), null), [{ id: 'com.webos.app.hdmi3', title: 'HDMI3', visible: false }]);
+  merged.find(item => item.appId === 'com.webos.app.hdmi3').visible = true;
+  const restored = plain(catalog.restore(defaults(), plain(catalog.serialize(merged))));
+  const hdmi3 = restored.find(item => item.appId === 'com.webos.app.hdmi3');
+  assert.deepEqual([hdmi3.kind, hdmi3.visible, hdmi3.title], ['input', true, 'HDMI 3']);
+});

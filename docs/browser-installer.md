@@ -16,7 +16,7 @@ operaciones que requieren root ya comprobado. No es una web estática universal.
 
 El compañero escucha sólo en loopback, con puerto dinámico y sesión local. No agrega un agente
 de instalación permanente en la TV ni permite una shell arbitraria desde la página. El frontend
-del launcher y el instalador de PC son programas distintos; Mi pantalla está en 0.7.12; su botón Pantalla completa sigue pendiente de prueba física.
+del launcher y el instalador de PC son programas distintos; Mi pantalla está en 0.7.13; su botón Pantalla completa sigue pendiente de prueba física.
 
 ## Qué impide hacerlo todo con JavaScript en el browser
 
@@ -111,8 +111,8 @@ El plan vence en cinco minutos y se vuelve a validar antes de escribir. Los paso
 privado y respaldo local/remoto. Una consulta de recuperación busca el destino original sin
 repetir automáticamente una operación que terminó con timeout.
 
-Puede instalar el IPK público 0.7.12 si la app falta, preparar Home y sus hooks propios, aplicar
-el perfil acotado de privacidad y retirar sólo tres apps LG elegidas. Con 0.7.12 presente omite
+Puede instalar el IPK público 0.7.13 si la app falta, preparar Home y sus hooks propios, aplicar
+el perfil acotado de privacidad y retirar sólo tres apps LG elegidas. Con 0.7.13 presente omite
 la instalación; otra versión bloquea ese paso hasta resolver preservación de actualizaciones.
 Restaurar no reinstala apps retiradas ni desinstala automáticamente un paquete nuevo.
 [Guía exacta, release fijado, SHA-256 y límites](local-installer.md).
@@ -160,6 +160,6 @@ no todos los cambios, y los journals no prueban tolerancia a pérdida total de a
 - Probar persistencia de captura tras reinicio, HDMI y contenido protegido.
 - Confirmar desde el botón Pantalla completa de la TV la activación y parada de 0.7.10.
 
-El release público 0.7.12 sin configuración del hogar ya está disponible y su SHA-256 queda fijado
+El release público 0.7.13 sin configuración del hogar ya está disponible y su SHA-256 queda fijado
 en el motor. Tener ese paquete y las acciones implementadas no demuestra todavía un recorrido
 completo de instalación y restauración sobre una TV original.

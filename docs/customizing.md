@@ -56,3 +56,25 @@ accesos que ya conoce. La cantidad cambia según lo instalado; esos números no 
 La vista previa del navegador muestra los accesos iniciales. Para consultar el catálogo real,
 abrí Mi pantalla en la TV. Esta pantalla administra accesos: no modifica los servicios internos
 de webOS ni instala o desinstala aplicaciones.
+
+## Apps de sistema de LG
+
+Personalizar lista las apps que la TV declara visibles. En la 49UN7310PSC son 24 de 121: LG marca como
+`visible:false` las otras 97, y casi todas son internas (superposiciones de publicidad, fábrica, ejemplos,
+ajustes de entradas). Una lista fija por id ofrece las que sí sirven desde el inicio, siempre «fuera del
+inicio» hasta que las agregues:
+
+| App | Id | Nota |
+| --- | --- | --- |
+| Configuración | `com.palm.app.settings` | |
+| TV en vivo, Guía de TV | `com.webos.app.livetv`, `com.webos.app.livemenu` | |
+| Grabaciones, Notificaciones | `com.webos.app.recordings`, `com.webos.app.notificationcenter` | |
+| Compartir pantalla, AirPlay | `com.webos.app.miracast`, `airplay` | |
+| Ayuda rápida, Guía del usuario | `com.webos.app.self-diagnosis`, `com.webos.app.tvuserguide` | |
+| Home de LG | `com.webos.app.home` | Atajo de recuperación al Home original |
+| HDMI 2, HDMI 3 | `com.webos.app.hdmi2`, `com.webos.app.hdmi3` | Van a la sección de entradas |
+
+No están a propósito: **Software Update** (un firmware nuevo puede quitar el root), Installation y las
+apps de fábrica. HDMI 4 tampoco: muchos modelos tienen tres puertos y HDMI 1 ya es un acceso propio.
+Un acceso a una entrada sin señal solo muestra pantalla negra. Sin TV, `?demo=lights&apps=tv` en la vista
+previa local simula este catálogo (pulsá «Actualizar apps»).

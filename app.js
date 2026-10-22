@@ -216,7 +216,8 @@
   }
   function refreshCatalog() {
     if (catalogLoading) return;
-    if (!onTV) { catalogError = 'Las apps instaladas se consultan desde la TV.'; renderManager(); return; }
+    // LAUNCHER_DEMO_APPS solo lo define la demo local (scripts/preview-lights-demo.js): un catálogo simulado.
+    if (!onTV && !window.LAUNCHER_DEMO_APPS) { catalogError = 'Las apps instaladas se consultan desde la TV.'; renderManager(); return; }
     var epoch = ++catalogEpoch;
     catalogLoading = true; catalogError = ''; renderManager();
     bridge.listApps().then(function (apps) {
