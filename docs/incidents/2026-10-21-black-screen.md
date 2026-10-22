@@ -71,3 +71,23 @@ parada normal, la estabilidad al volver con Home con captura, la latencia ni una
 La restauración offline 6/6 y la recuperación de imagen tienen la evidencia acotada indicada;
 las pruebas locales del software no acreditan esos resultados físicos ni la causalidad.
 La evidencia anterior de 0.7.6 permanece como un checkpoint separado, no valida este incidente.
+
+## Revisión posterior sin reactivar la captura
+
+La integración actual de Manual detiene `LEDDEVICE` y restaura las lámparas, pero no llama a
+`PicCap.stop`. El cambio de visibilidad de Mi pantalla pausa el modo fondo, no la captura
+nativa. Es un problema concreto de gestión del ciclo de captura, aunque no demuestra la
+causa del bloqueo. Home nativo define el destino de apertura; no se encontró un gancho previo
+acreditado que permita detener PicCap antes de salir de YouTube con el botón físico.
+
+El backend incluido en PicCap 0.5.3 corresponde a `00c932f`. Su
+[hilo de sincronización](https://github.com/webosbrew/hyperion-webos/blob/00c932f092084b234b3f619b060a98fa134c12bd/unicapture/unicapture.c)
+puede terminar la captura de video mientras el otro hilo consume cuadros; el
+[backend VTC](https://github.com/webosbrew/hyperion-webos/blob/00c932f092084b234b3f619b060a98fa134c12bd/unicapture/backends/libvtcapture.cpp)
+entrega punteros a buffers del driver. Esto plantea una hipótesis de concurrencia al cambiar
+de superficie, sin identificar la causa de esta TV. Los registros guardados no confirman
+que esa ruta se haya ejecutado antes del bloqueo.
+
+No se cambiaron backends, quirks ni ajustes de la TV durante esta revisión. Separar captura
+de video y GUI o gestionar una parada completa son posibilidades que requieren pruebas;
+ninguna se presenta como solución verificada ni habilita volver a activar la captura.
