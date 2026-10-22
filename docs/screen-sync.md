@@ -358,11 +358,17 @@ manual, restaurando luces o el error. El estado vive en `state.json` (se conside
 
 ### Qué se probó y qué no
 
-Probado: 695 tests (vigilante con reloj simulado, archivos privados, panel y renovación). En la TV se
-comprobó el ciclo activar → proceso root vivo → desactivar → proceso terminado y estado `off`.
-Una corrección posterior (la suscripción usaba `luna-send -f`, cuyo JSON multilínea el lector
-descartaba) solo está probada con tests hasta validarla en la TV. **Sin probar:** que entrar a YouTube
-inicie la captura, que salir restaure las seis lámparas, el comportamiento al apagar la TV y la carga de CPU.
+Probado: 699 tests (vigilante con reloj simulado, archivos privados, panel y renovación). En la TV, con el
+paquete final instalado el 22 de octubre de 2026: activar Auto lanza `auto-sync.js` como root, el estado
+pasa a `idle` y sigue la app en primer plano (vio `com.webos.app.hdmi1`), mantiene dos suscripciones
+`luna-send` (app en primer plano y energía) y desactivar termina el proceso, cierra las suscripciones y deja
+`state.json` en `off`. Todos los archivos del servicio coinciden por hash con el repositorio y
+`screen-config.json` quedó idéntico. Un primer intento reveló que la suscripción usaba `luna-send -f`, cuyo
+JSON multilínea el lector descartaba; ya está corregido.
+
+**Sin probar:** que entrar a YouTube inicie la captura, que salir restaure las seis lámparas, el
+comportamiento al apagar la TV con una sesión activa y la carga de CPU. Esas pruebas encienden luces reales
+y la captura, por eso quedan para hacerlas con el dueño frente a la TV.
 
 ### Vista previa local
 
