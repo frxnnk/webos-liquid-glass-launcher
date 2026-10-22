@@ -1,6 +1,6 @@
 # Colores de YouTube y HDMI
 
-**Estado al 2026-10-21: 0.7.7 instalada; prueba física del botón Pantalla completa pendiente.**
+**Estado al 2026-10-21: 0.7.7 prerelease instalada; confirmación visual del botón Pantalla completa pendiente.**
 
 La 0.7.7 corrige la carrera entre una orden aceptada por HyperHDR y la habilitación efectiva
 de `LEDDEVICE`: espera y vuelve a leer el estado dentro de un plazo acotado, sin repetir la
@@ -10,6 +10,13 @@ Tras Pantalla completa o Manual confirmados, el panel consulta el estado una vez
 conserva el modo confirmado, permite Manual y muestra captura sin confirmar. No hay polling.
 El plazo de esos cambios es 15 s; los demás controles conservan sus tiempos anteriores.
 La suite completa pasó **555/555 pruebas**. Eso no prueba todavía el botón físico de la TV.
+
+Checkpoint de telemetría posterior al prerelease: el diagnóstico nativo devolvió `phase: active`,
+`active: true`, `outputEnabled: true` y frames frescos, con YouTube en primer plano a unos
+**28,5 FPS**. Dos consultas UDP independientes, separadas 3 s, encontraron las seis lámparas
+encendidas; tres cambiaron RGB/brillo y las otras no variaron en ese intervalo. La sesión se
+observó después de solicitar la prueba, sin activarla desde PC. Esto no atribuye una
+confirmación visual al dueño ni valida escenas, latencia o Stop de 0.7.7; siguen pendientes.
 
 ## Checkpoint físico 0.7.6 desde el asistente de PC
 

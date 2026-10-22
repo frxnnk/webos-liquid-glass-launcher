@@ -3,7 +3,7 @@
 Un inicio personalizado para LG webOS: tus apps, fotos y el control del living en una pantalla
 Liquid Glass que se maneja con el control remoto.
 
-**0.7.7 instalada en la TV de referencia; prueba física de Pantalla completa pendiente.** Conserva un acceso a Homebrew Channel y un auditor
+**0.7.7 prerelease instalada; confirmación visual de Pantalla completa pendiente.** Conserva un acceso a Homebrew Channel y un auditor
 de privacidad y recursos de sólo lectura. Los ocho accesos entran a 1080p y 720p. El acceso
 abrió Homebrew Channel en la TV; no instala paquetes ni obtiene root por sí mismo.
 
@@ -14,7 +14,12 @@ incluidas las dos en escena: el estado se contrastó de forma independiente con 
 Después, el botón de la TV expuso una carrera: HyperHDR aceptaba una orden encolada antes de
 confirmar `LEDDEVICE`. La **0.7.7** espera el estado efectivo y separa captura activa de preparada
 en la UI. Tras activar o volver a Manual hace una sola consulta de estado. **Todavía no se
-confirmó físicamente este arreglo desde el botón Pantalla completa de la TV.**
+confirmó visualmente este arreglo desde el botón Pantalla completa de la TV.**
+
+Checkpoint de telemetría posterior: sesión nativa `active`, salida LED encendida y frames frescos
+con YouTube en primer plano a unos **28,5 FPS**. Dos lecturas UDP separadas 3 s encontraron las
+seis WiZ encendidas; tres cambiaron RGB/brillo. La sesión apareció tras solicitar la prueba,
+sin activarla desde PC. Falta confirmación visual del dueño; no acredita escenas, latencia ni Stop de 0.7.7.
 
 [**Tutorial completo**](docs/tutorial.md) · [Privacidad y limpieza](docs/privacy-cleanup.md) ·
 [Funciones futuras](docs/product-vision.md) · [Instalador desde el navegador](docs/browser-installer.md)
