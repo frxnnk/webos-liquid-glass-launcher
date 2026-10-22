@@ -59,6 +59,22 @@ durante esa comprobación. Más tarde el dueño confirmó buen funcionamiento ge
 3. Usá encendido, brillo, colores o temperatura de blanco. Cada orden requiere una respuesta
    y una lectura posterior; los errores se muestran por lámpara. No se reintentan órdenes manuales.
 
+## Si no tenés lámparas WiZ
+
+El control de luces es opcional y el panel no usa el nombre de ninguna casa:
+
+- **Sin `lights-config.js`** el botón **Luces** aparece solo en la TV. En la vista previa del navegador
+  queda oculto, así que un clon sin WiZ no muestra un panel que no puede usar.
+- **`enabled: false`** en `lights-config.js` lo oculta siempre, también en la TV.
+- **`roomName`** cambia el título del panel (por defecto «Luces»).
+- Si abrís el panel sin lámparas, explica que controla lámparas WiZ de la red local; **Buscar lámparas**
+  informa cuando no encuentra ninguna. Auto queda deshabilitado hasta elegir lámparas.
+- Pantalla completa y Auto requieren además root, PicCap y HyperHDR; sin eso aparecen como opcionales.
+
+[`lights-config.example.js`](../lights-config.example.js) muestra las tres opciones. Para ver el panel
+sin lámparas reales: `node scripts/serve.cjs` y `http://127.0.0.1:43817/?demo=lights` (`&lamps=none`
+simula un hogar sin WiZ).
+
 La selección se guarda en la TV. El repo no contiene direcciones ni identificadores del hogar.
 Un `lights-config.js` local y excluido de Git puede definir `window.LAUNCHER_LIGHTS.selectedIds`
 como selección inicial: solo se usa si todavía no hay una selección guardada. Una selección

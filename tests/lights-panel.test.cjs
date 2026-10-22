@@ -654,7 +654,7 @@ test('rendered ambient controls describe only Mi pantalla and a color click retu
   assert.equal(color.disabled, false); assert.ok(whites.every((n) => !n.disabled));
   assert.equal(modes[2].disabled, true); assert.equal(modes[1].attributes['aria-pressed'], 'true');
   assert.match(note.textContent, /foto de Mi pantalla/); assert.match(note.textContent, /no otras apps ni HDMI/);
-  assert.match(note.textContent, /captura pendiente de verificar en esta TV/); assert.doesNotMatch(note.textContent, /esta tele.*no permite/);
+  assert.match(note.textContent, /Opcional: la captura de pantalla necesita root, PicCap y HyperHDR/); assert.doesNotMatch(note.textContent, /esta tele.*no permite/);
   color.listeners.click();
   assert.equal(h.view.mode, 'manual'); assert.equal(modes[0].attributes['aria-pressed'], 'true');
   assert.equal(modes[1].attributes['aria-pressed'], 'false'); assert.equal(client.last().method, 'setState');

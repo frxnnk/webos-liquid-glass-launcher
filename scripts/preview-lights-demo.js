@@ -1,6 +1,7 @@
 // Solo vista previa local (http://127.0.0.1:43817/?demo=lights). No va en el IPK: build.cjs copia una lista fija.
 // Simula el servicio de luces para dibujar el panel completo, sin enviar nada a lámparas reales.
 // Estados de Auto para ver cada variante: &auto=off|idle|waiting|syncing|stopping|error|starting
+// Sin lámparas WiZ: &lamps=none
 (function () {
   'use strict';
   // La demo parte siempre de la selección de lights-config.js, sin restos de otras pruebas.
@@ -8,7 +9,11 @@
   var params = new URLSearchParams(location.search);
   var autoState = params.get('auto') || 'off';
   var fallback = ['aabbcc000001', 'aabbcc000002', 'aabbcc000003', 'aabbcc000004', 'aabbcc000005', 'aabbcc000006'].map(function (mac) { return 'wiz-' + mac; });
-  var ids = (window.LAUNCHER_LIGHTS && window.LAUNCHER_LIGHTS.selectedIds) || fallback;
+  // &lamps=none: lo que ve quien clona el repo y no tiene lámparas WiZ.
+  var none = params.get('lamps') === 'none';
+  if (none) window.LAUNCHER_LIGHTS = { selectedIds: [] };
+  window.LAUNCHER_LIGHTS = window.LAUNCHER_LIGHTS || { selectedIds: fallback };
+  var ids = none ? [] : (window.LAUNCHER_LIGHTS.selectedIds || fallback);
   var names = ['Techo', 'Sofá', 'Biblioteca', 'Escritorio', 'Lámpara de pie', 'Ventana'];
   var levels = [80, 60, 45, 70, 55, 35];
   var lamps = ids.map(function (id, i) {

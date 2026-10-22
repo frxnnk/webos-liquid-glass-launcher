@@ -5,7 +5,7 @@ const vm=require('node:vm');
 const path=require('node:path');
 const source=fs.readFileSync(path.join(__dirname,'../lights-panel.js'),'utf8');
 const flush=()=>new Promise(resolve=>setImmediate(resolve));
-function panel(initialIds){
+function panel(initialIds,extra={}){
   const events={window:{},document:{}};let document;
   function node(tag,className=''){
     let value='';const result={tagName:tag.toUpperCase(),className,children:[],attributes:{},style:{},listeners:{},disabled:false,hidden:false,scrolls:0,
@@ -35,7 +35,7 @@ function panel(initialIds){
   const body=node('body');body.classList={add(){},remove(){}};
   document={activeElement:null,body,createElement:node,addEventListener:(n,f)=>bind('document',n,f),removeEventListener:(n,f)=>unbind('document',n,f)};
   const host=node('section','lights-panel');host.hidden=true;body.appendChild(host);
-  const fields={};for(const name of ['lights-summary','lights-list','lights-controls','lights-status','lights-close','lights-search']){
+  const fields={};for(const name of ['lights-title','lights-summary','lights-list','lights-controls','lights-status','lights-close','lights-search']){
     fields[name]=node(name==='lights-close'||name==='lights-search'?'button':'div',name);host.appendChild(fields[name]);
   }
   const button=node('button');body.appendChild(button);button.focus();
@@ -43,7 +43,7 @@ function panel(initialIds){
   for(const method of ['capabilities','discover','getState','setState','setMode','screenStatus','autoStatus','setAuto'])client[method]=payload=>new Promise((resolve,reject)=>client.calls.push({method,payload,resolve,reject}));
   const window={localStorage:{getItem(){return null;},setItem(){}},addEventListener:(n,f)=>bind('window',n,f),removeEventListener:(n,f)=>unbind('window',n,f)};
   vm.runInNewContext(source,{window,document,Promise,Error,setTimeout,clearTimeout});
-  const mounted=window.LauncherLights.mount({host,button,client,initialIds});
+  const mounted=window.LauncherLights.mount(Object.assign({host,button,client,initialIds},extra));
   async function open(screenSync=true){mounted.open();client.calls[0].resolve({available:true,mode:'manual',wallpaperSync:true,screenSync});await flush();}
   async function discover(devices){const pending=mounted.controller.discover();client.calls[client.calls.length-1].resolve({devices});await pending;}
   function key(key){(events.window.keydown||[]).slice().forEach(fn=>fn({key,preventDefault(){},stopPropagation(){}}));}
@@ -57,12 +57,16 @@ const last=p=>p.client.calls[p.client.calls.length-1];
 const plain=value=>JSON.parse(JSON.stringify(value));
 
 test('opening with capture support asks for the Auto status once and shows the switch card',async()=>{
-  const p=panel();await p.open();
-  assert.deepEqual(p.client.calls.map(c=>c.method),['capabilities','autoStatus']);
-  last(p).resolve(AUTO_OFF);await flush();
+  const p=panel(['lamp-0']);await p.open();
+  assert.deepEqual(p.client.calls.map(c=>c.method),['capabilities','autoStatus','getState']);
+  p.client.calls[1].resolve(AUTO_OFF);p.client.calls[2].resolve({devices:[]});await flush();
   assert.equal(card(p).getAttribute('aria-pressed'),'false');assert.equal(card(p).disabled,false);
   assert.match(card(p).textContent,/Auto/);assert.match(card(p).textContent,/Solo con YouTube/);assert.match(card(p).textContent,/Desactivado/);
   p.mounted.close();
+});
+test('without a chosen lamp the Auto card is disabled and says why',async()=>{
+  const p=panel();await p.open();last(p).resolve(AUTO_OFF);await flush();
+  assert.equal(card(p).disabled,true);assert.match(card(p).textContent,/Elegí lámparas primero/);p.mounted.close();
 });
 test('without capture support Auto is never requested and its card stays disabled',async()=>{
   const p=panel();await p.open(false);
@@ -117,4 +121,27 @@ test('the card toggles Auto from the remote and the existing mode cards keep the
   card(p).listeners.click();assert.deepEqual(plain(last(p).payload),{enabled:true});
   last(p).resolve({available:true,enabled:true,state:'idle',reason:''});await flush();
   card(p).listeners.click();assert.deepEqual(plain(last(p).payload),{enabled:false});p.mounted.close();
+});
+
+test('the title is the configured room name, "Luces" by default, and never raw markup or a long string',()=>{
+  assert.equal(panel().fields['lights-title'].textContent,'Luces');
+  assert.equal(panel([],{roomName:'Living'}).fields['lights-title'].textContent,'Living');
+  assert.equal(panel([],{roomName:42}).fields['lights-title'].textContent,'Luces');
+  assert.equal(panel([],{roomName:''}).fields['lights-title'].textContent,'Luces');
+  assert.equal(panel([],{roomName:'x'.repeat(80)}).fields['lights-title'].textContent.length,24);
+});
+test('the Luces button is shown by default and hidden only when the app says there is nothing to control',()=>{
+  assert.equal(panel().button.hidden,false);
+  assert.equal(panel([],{visible:true}).button.hidden,false);
+  assert.equal(panel([],{visible:false}).button.hidden,true);
+});
+test('without any WiZ lamp the panel explains what it controls and a search with no result says so',async()=>{
+  const p=panel([]);await p.open(false);
+  assert.match(p.fields['lights-list'].textContent,/lámparas WiZ de tu red local/);
+  const search=p.mounted.controller.discover();p.client.calls[p.client.calls.length-1].resolve({devices:[]});await search;
+  assert.match(p.mounted.controller.view.message,/No se encontró ninguna lámpara WiZ en la red./);
+  assert.match(p.fields['lights-list'].textContent,/No se encontró ninguna lámpara./);
+  assert.match(p.host.querySelector?String(p.fields['lights-status'].textContent):'',/No se encontró ninguna lámpara WiZ/);
+  assert.equal(/living/i.test(p.fields['lights-list'].textContent+p.fields['lights-status'].textContent),false);
+  p.mounted.close();
 });

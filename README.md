@@ -16,7 +16,7 @@
 > Home con captura activa llegó al launcher en 0.7.9 y el dueño confirmó imagen normal.
 > STOP ya no depende de respuestas WiZ mientras HyperHDR escribe. La última restauración
 > necesitó dos intentos de Manual y terminó con 6/6 estados exactos, verificados por UDP.
-> Captura apagada y sin recuperación pendiente al cerrar. Suite 0.7.12: **695/695**.
+> Captura apagada y sin recuperación pendiente al cerrar. Suite 0.7.12: **699/699**.
 > [Captura y límites](docs/screen-sync.md) · [Incidente previo](docs/incidents/2026-10-21-black-screen.md).
 
 Un inicio personalizado para LG webOS: tus apps, fotos y el control del living en una pantalla

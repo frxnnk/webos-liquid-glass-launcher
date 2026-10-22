@@ -129,10 +129,10 @@ hasta 25 s y conservan la recuperación pendiente si falta confirmación.
 ## Paquete público fijado
 
 [Release v0.7.12](https://github.com/frxnnk/webos-liquid-glass-launcher/releases/tag/v0.7.12):
-`com.frxn.mipantalla_0.7.12_all.ipk`, **70 archivos, 1.710.242 bytes**.
+`com.frxn.mipantalla_0.7.12_all.ipk`, **70 archivos, 1.710.360 bytes**.
 
 ```text
-SHA-256: 19909bf50435550be5c70929d9ab7aa8e94800fdf76d9603329933f03a16b871
+SHA-256: 10976d38e156a3b2178d5ae982d0b989b9372188671fbbb7290d614c5dc18820
 ```
 
 No contiene `weather-config.js`, `lights-config.js` ni `screen-config.json`. Es distinto del IPK

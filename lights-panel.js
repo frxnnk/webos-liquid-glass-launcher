@@ -1,4 +1,4 @@
-// Luces WiZ del living: panel que controla solo las lámparas marcadas a mano. Este módulo no habla
+// Luces WiZ: panel que controla solo las lámparas marcadas a mano. Este módulo no habla
 // con la red: usa el cliente que entrega el proyecto padre (capabilities, discover, getState, setState,
 // setMode, screenStatus). Pedidos: capabilities y getState al abrir; el resto solo al pulsar OK.
 // Nada se da por aplicado sin respuesta: sin respuesta a tiempo, el estado queda desconocido.
@@ -14,11 +14,11 @@
   var WHITES = [['Cálido', 2700], ['Neutro', 4000], ['Frío', 6500]];
   var MODES = [['manual', 'Manual'], ['ambient', 'Acompañar fondo'], ['screen', 'Pantalla completa']];
   var SCREEN_REASONS = {
-    'setup-pending': 'captura pendiente de verificar en esta TV; falta configurar la captura.',
+    'setup-pending': 'la captura de pantalla necesita root, PicCap y HyperHDR en esta TV.',
     'config-invalid': 'revisá la configuración de captura.', 'offline': 'el servicio de captura no está disponible.',
     'auth-required': 'la captura necesita autorización.', 'admin-required': 'la captura necesita permisos de administración.',
     'instance-mismatch': 'la instancia de captura no coincide.', 'profile-mismatch': 'el perfil de captura no coincide.',
-    'selection-required': 'marcá las lámparas del living.', 'selection-mismatch': 'las lámparas no coinciden con el perfil de captura.',
+    'selection-required': 'marcá las lámparas que querés controlar.', 'selection-mismatch': 'las lámparas no coinciden con el perfil de captura.',
     'frames-unverified': 'captura pendiente de verificar en esta TV.',
     'capture-not-ready': 'no se pudo verificar que la captura esté lista para iniciar.',
     'hardware-unverified': 'la salida física de esta TV todavía no está verificada.',
@@ -100,7 +100,7 @@
     if (screen.ready && screen.captureStartReady && !screen.framesVerified) return 'Lista para iniciar captura; todavía no hay cuadros de video confirmados.';
     if (screen.ready) return 'Preparado: captura verificada; elegí Pantalla completa para activarla.';
     var reason = screen.reason || 'frames-unverified';
-    var label = reason === 'setup-pending' ? 'Preparado' :
+    var label = reason === 'setup-pending' ? 'Opcional' :
       reason === 'frames-unverified' || reason === 'hardware-unverified' || reason === 'selection-required' ? 'No verificado' : 'Error';
     return label + ': ' + SCREEN_REASONS[reason];
   }
@@ -289,7 +289,7 @@
       },
       // Descubre lámparas; ninguna se marca sola y la selección guardada se revalida contra el resultado.
       discover: function () {
-        if (view.mode === 'screen') { view.message = 'Volvé a Manual antes de buscar o cambiar las lámparas del living.'; changed(); return Promise.resolve(false); }
+        if (view.mode === 'screen') { view.message = 'Volvé a Manual antes de buscar o cambiar las lámparas.'; changed(); return Promise.resolve(false); }
         if (view.phase !== 'ready' || view.busy) return Promise.resolve(false);
         start('Buscando lámparas WiZ en la red…');
         return call('discover', undefined, DISCOVER_MS).then(function (outcome) {
@@ -309,7 +309,7 @@
           save();
           var dropped = before - view.selected.length;
           var stopFailed = dropped && !stopLocalAmbient();
-          view.message = (list.length ? (list.length === 1 ? 'Se encontró 1 lámpara' : 'Se encontraron ' + list.length + ' lámparas') + '. Marcá solo las del living.' : 'No se encontró ninguna lámpara WiZ en la red.') +
+          view.message = (list.length ? (list.length === 1 ? 'Se encontró 1 lámpara' : 'Se encontraron ' + list.length + ' lámparas') + '. Marcá las que querés controlar.' : 'No se encontró ninguna lámpara WiZ en la red.') +
             (dropped ? ' Se quitaron ' + dropped + ' guardadas que ya no aparecen.' : '') + (stopFailed ? ' No se pudo detener el seguimiento local.' : '');
           changed();
           return true;
@@ -317,7 +317,7 @@
       },
       toggle: function (id) {
         if (!find(id)) return;
-        if (view.mode === 'screen') { view.message = 'Volvé a Manual antes de cambiar las lámparas del living.'; changed(); return; }
+        if (view.mode === 'screen') { view.message = 'Volvé a Manual antes de cambiar las lámparas.'; changed(); return; }
         stopLocalAmbient();
         view.screen = emptyScreen();
         var at = view.selected.indexOf(id);
@@ -439,7 +439,7 @@
     var mainCard = element('div', 'lights-main-card');
     var overview = element('div', 'lights-overview');
     var room = element('div', 'lights-room');
-    room.appendChild(element('p', 'lights-label', 'Estado del living'));
+    room.appendChild(element('p', 'lights-label', 'Estado de las luces'));
     var powerState = element('p', 'lights-power-state');
     room.appendChild(powerState);
     overview.appendChild(room);
@@ -527,7 +527,7 @@
       if (!view.devices.length) {
         list.appendChild(element('p', 'lights-empty', view.phase === 'unavailable' ? 'Sin servicio de luces no se pueden ver ni elegir lámparas.' :
           view.phase !== 'ready' ? 'Esperando al servicio de luces…' :
-          view.searched ? 'No se encontró ninguna lámpara.' : 'Todavía no hay lámparas: pulsá Buscar lámparas. Ninguna se marca sola.'));
+          view.searched ? 'No se encontró ninguna lámpara.' : 'Este panel controla lámparas WiZ de tu red local. Pulsá Buscar lámparas; ninguna se marca sola.'));
       }
       view.devices.forEach(function (d, index) {
         var name = d.name || 'Lámpara ' + (index + 1);
@@ -537,7 +537,7 @@
         node.setAttribute('role', 'checkbox');
         node.setAttribute('aria-checked', picked ? 'true' : 'false');
         node.setAttribute('data-lamp', d.id);
-        node.setAttribute('aria-label', name + ', ' + describe(d) + (picked ? ', en el living' : ''));
+        node.setAttribute('aria-label', name + ', ' + describe(d) + (picked ? ', seleccionada' : ''));
         node.disabled = view.phase !== 'ready' || view.mode === 'screen';
         node.appendChild(element('span', 'lights-check'));
         var label = element('span', 'lights-device-name', name);
@@ -580,7 +580,6 @@
       // El resumen solo habla cuando algo anda mal o se está consultando; en lo normal las casillas y el contador ya lo dicen.
       q('.lights-summary').textContent = view.phase === 'checking' ? 'Consultando el servicio de luces…' :
         view.phase === 'unavailable' ? 'Control de luces no disponible: ' + view.reason : '';
-      host.setAttribute('data-demo', caps.demo ? 'true' : 'false');
       q('.lights-status').textContent = view.busy || view.message;
       host.setAttribute('aria-busy', view.busy ? 'true' : 'false');
       renderList(view);
@@ -588,9 +587,9 @@
       review.disabled = !ready || !!view.busy;
       chips.forEach(function (item) {
         if (item.kind === 'autoswitch') {
-          item.node.disabled = !(ready && !view.busy && view.auto.available && caps.screenSync);
+          item.node.disabled = !(ready && !view.busy && view.auto.available && caps.screenSync && view.selected.length > 0);
           item.node.setAttribute('aria-pressed', view.auto.enabled ? 'true' : 'false');
-          item.detail.textContent = autoDetail(view.auto);
+          item.detail.textContent = view.auto.available && !view.selected.length && !view.auto.enabled ? 'Elegí lámparas primero' : autoDetail(view.auto);
           return;
         }
         var restoring = item.kind === 'mode' && item.value === 'manual' && view.mode === 'screen';
@@ -680,7 +679,10 @@
     button.addEventListener('click', openPanel);
     closeButton.addEventListener('click', closePanel);
     search.addEventListener('click', onSearch);
-    button.hidden = false;
+    // Sin configuración de luces y fuera de la TV (vista previa de un clon sin WiZ) el botón no aparece.
+    button.hidden = options.visible === false;
+    var title = q('.lights-title');
+    if (title) title.textContent = text(options.roomName, 24) || 'Luces';
     render(controller.view);
     return {
       open: openPanel,

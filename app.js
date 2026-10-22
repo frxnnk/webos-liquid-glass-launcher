@@ -407,6 +407,9 @@
       button: document.getElementById('lights-button'),
       client: function () { return window.LAUNCHER_LIGHTS_CLIENT || null; },
       initialIds: window.LAUNCHER_LIGHTS && window.LAUNCHER_LIGHTS.selectedIds,
+      roomName: window.LAUNCHER_LIGHTS && window.LAUNCHER_LIGHTS.roomName,
+      // Con lights-config.js (o en la TV) aparece el botón; enabled: false lo oculta para quien no tiene WiZ.
+      visible: window.LAUNCHER_LIGHTS ? window.LAUNCHER_LIGHTS.enabled !== false : onTV,
       say: say
     });
   }
