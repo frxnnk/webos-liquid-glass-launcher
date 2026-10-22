@@ -30,7 +30,7 @@ seis WiZ encendidas; tres cambiaron RGB/brillo. La sesión apareció tras solici
 sin activarla desde PC. El dueño confirmó los colores después; esto no acredita escenas,
 latencia ni Stop normal de 0.7.7. La imagen se recuperó tras desenchufar 60 s y una recuperación
 offline posterior restauró las seis luces al baseline exacto. Un único Home con ambos
-capturadores apagados llegó a Mi pantalla según foreground; falta confirmación visual del dueño.
+capturadores apagados llegó a Mi pantalla según foreground; el dueño confirmó que el inicio se ve bien.
 La causa y una corrección permanente siguen pendientes.
 
 [**Tutorial completo**](docs/tutorial.md) · [Privacidad y limpieza](docs/privacy-cleanup.md) ·

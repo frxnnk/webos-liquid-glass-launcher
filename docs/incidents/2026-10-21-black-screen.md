@@ -59,8 +59,9 @@ quedó resuelta mediante esa restauración verificada, no borrando el WAL para e
 
 Se probó Home **una sola vez**, con PicCap e HyperHDR apagados. La orden devolvió ACK positivo;
 a los 2 segundos el foreground estaba vacío durante la transición y una lectura posterior
-mostró `com.frxn.mipantalla`. Las capacidades informaron modo Manual. No se midió latencia y
-**falta confirmación visual del dueño de Mi pantalla**. Esto no prueba Home con captura activa.
+mostró `com.frxn.mipantalla`. Las capacidades informaron modo Manual. El dueño confirmó
+**que Mi pantalla se ve bien después de esta prueba**. No se midió latencia y esto no prueba
+Home con captura activa.
 
 Mientras siga abierto, no se deben repetir activaciones de captura ni añadir kills, factory
 reset o sysrq. No borrar el WAL para destrabar controles. La captura de video permanece apagada.
