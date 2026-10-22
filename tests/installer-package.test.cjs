@@ -24,11 +24,11 @@ test('absence is never inferred from malformed or duplicate inventory records',(
   assert.equal(validInventory({returnValue:true,apps:[{id:'netflix'}]}),true);
 });
 test('package pin is immutable and rejects modified data',()=>{
-  assert.equal(PIN.version,'0.7.14'); assert.equal(PIN.sha256,'12ccbf8b9e45e753c55ded8ee9a18415a05c64bb9e989a7801d811122d0138f8');
+  assert.equal(PIN.version,'0.7.15'); assert.equal(PIN.sha256,'87639ea12fbe618e855001c256ff29a4996d61632beaeaa72b772a2429e7c79e');
   assert.throws(()=>verifyPackage(Buffer.from('not the IPK')),/PACKAGE_HASH_MISMATCH/);
 });
 test('an already installed exact version is skipped without touching disk or TV',async()=>{
-  const result=await installPackage({runRemote(){throw Error('must not call');}},{backupId:'a'.repeat(32),expectedInstalledVersion:'0.7.14'});
+  const result=await installPackage({runRemote(){throw Error('must not call');}},{backupId:'a'.repeat(32),expectedInstalledVersion:'0.7.15'});
   assert.equal(result.status,'skipped');
 });
 test('unknown installed version blocks an update before reading a package',async()=>{

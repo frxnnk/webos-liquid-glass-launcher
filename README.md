@@ -1,6 +1,11 @@
 # Mi pantalla
 
-> **0.7.14 instalada** (22 de octubre de 2026): **Personalizar ahora lista todas las apps de la TV, con su ícono**.
+> **0.7.15 instalada** (22 de octubre de 2026): la barra del dock es algo más transparente. En la TV (Chromium 68, sin
+> `backdrop-filter`) la barra es una copia borrosa de la foto con un velo oscuro; ahora esa copia está al 70 % y la
+> base azul baja de .5 a .15, así que se intuye la foto nítida detrás. Se probaron tres niveles en vivo en la TV y se
+> eligió el más suave. Navegadores con `backdrop-filter` ya eran translúcidos y no cambian.
+>
+> **0.7.14:** **Personalizar ahora lista todas las apps de la TV, con su ícono**.
 > La TV le niega `listApps` a la app (y también al servicio con su identidad), así que Personalizar solo
 > mostraba los accesos propios; ahora lo pide el servicio de luces con un `luna-send` de root, de solo lectura, y
 > copia los íconos a la carpeta de la app (la página no puede leer las de otras apps). Verificado en la TV por
@@ -28,13 +33,13 @@
 > Home con captura activa llegó al launcher en 0.7.9 y el dueño confirmó imagen normal.
 > STOP ya no depende de respuestas WiZ mientras HyperHDR escribe. La última restauración
 > necesitó dos intentos de Manual y terminó con 6/6 estados exactos, verificados por UDP.
-> Captura apagada y sin recuperación pendiente al cerrar. Suite 0.7.14: **714/714**.
+> Captura apagada y sin recuperación pendiente al cerrar. Suite 0.7.15: **714/714**.
 > [Captura y límites](docs/screen-sync.md) · [Incidente previo](docs/incidents/2026-10-21-black-screen.md).
 
 Un inicio personalizado para LG webOS: tus apps, fotos y el control del living en una pantalla
 Liquid Glass que se maneja con el control remoto.
 
-**0.7.14 instalada.** Las apps del inicio pueden elegirse y ordenarse desde Personalizar.
+**0.7.15 instalada.** Las apps del inicio pueden elegirse y ordenarse desde Personalizar.
 Los accesos que exceden el ancho se recorren con las flechas; HDMI queda en su sección.
 Conserva Homebrew Channel y el auditor de privacidad y recursos de sólo lectura.
 

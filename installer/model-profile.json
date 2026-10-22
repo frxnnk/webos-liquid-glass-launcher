@@ -6,7 +6,7 @@
   "release": "5.6.2-21",
   "releaseBuild": "jhericurl-jimna",
   "board": "K6LP_ATSC_BR",
-  "app": {"id":"com.frxn.mipantalla","version":"0.7.14","artifact":"artifacts/public-launcher/com.frxn.mipantalla_0.7.14_all.ipk","sha256":"12ccbf8b9e45e753c55ded8ee9a18415a05c64bb9e989a7801d811122d0138f8"},
+  "app": {"id":"com.frxn.mipantalla","version":"0.7.15","artifact":"artifacts/public-launcher/com.frxn.mipantalla_0.7.15_all.ipk","sha256":"87639ea12fbe618e855001c256ff29a4996d61632beaeaa72b772a2429e7c79e"},
   "removeAllowlist": ["webos.day", "epoxyaisports", "lgchannels.home"],
   "protectedApps": ["amazon","com.pplus.webapp.prod-intl","com.wbd.stream","io.strem.tv","telefonica.argentina","tv.twitch.tv.starshot.lg","com.palmdts.devmode","youtube.leanback.v4","spotify-beehive","space.nuvio.webos","netflix","com.disney.disneyplus-prod","org.webosbrew.hbchannel","com.frxn.mipantalla","com.webos.app.home","com.webos.app.fullhome","com.webos.app.browser","com.webos.app.lgappstv","com.webos.app.hdmi1","com.palm.app.settings"]
 }

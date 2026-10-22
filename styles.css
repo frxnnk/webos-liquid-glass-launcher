@@ -217,6 +217,7 @@ button:disabled { cursor: default; }
   height: 15.55rem;
   padding: 2.4rem 2rem;
   border-radius: 5.3rem; /* concéntrico: radio del ícono (2.9) + margen (2.4) */
+  background-color: rgba(20, 26, 52, .15); /* menos azul de base: la barra deja ver la foto */
 }
 /* Vidrio de respaldo: la foto actual, diminuta y ampliada, recortada por el dock. */
 .dock-frost {
@@ -229,6 +230,7 @@ button:disabled { cursor: default; }
   overflow: hidden;
   border-radius: inherit;
   pointer-events: none;
+  opacity: .7; /* la copia borrosa deja pasar un poco de la foto nítida: barra algo transparente */
 }
 .dock-frost:after {
   content: "";
