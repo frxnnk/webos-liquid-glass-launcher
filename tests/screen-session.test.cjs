@@ -20,11 +20,12 @@ function fixture(options = {}) {
     start:ids=>{events.push(['start', ids]); return options.start ? options.start(ids) : {active:true};},
     stop:ids=>{events.push(['stop', ids]); return options.stop ? options.stop(ids) : {active:false};}
   };
-  const deps = {backend, store,
+  const delays = [];
+  const deps = {backend, store, retryDelayMs:1500, delay:ms=>{delays.push(ms);},
     read:ids=>{events.push(['read', ids]); return options.read ? options.read(ids) : {devices:clone(states)};},
     write:(id, patch)=>{events.push(['write', id, clone(patch)]); return options.write ? options.write(id, patch) : {confirmed:true};}};
   const create = require(file).create;
-  return {session:create(deps), restart:()=>create(deps), events, record:()=>clone(record), states};
+  return {session:create(deps), restart:()=>create(deps), events, delays, record:()=>clone(record), states};
 }
 
 test('status inspects only and requires strictly verified hardware, frames and configuration', async()=>{
@@ -146,27 +147,28 @@ test('partial restore persists each confirmed lamp and a later stop resumes only
   const t=fixture({read:()=>({devices:[
     {id:a,reachable:true,state:{on:true,brightness:42,temperature:3200}},
     {id:b,reachable:true,state:{on:false,brightness:23,rgb:null,temperature:null}}]}),
-    write:id=>id===a && ++attempt===1 ? {confirmed:false} : {confirmed:true}});
+    write:id=>id===a && ++attempt<=2 ? {confirmed:false} : {confirmed:true}});
   await t.session.start([a,b]);
   await assert.rejects(t.session.stop());
   assert.deepEqual(t.record(),{phase:'restoring',ids:[a,b],devices:[{id:a,state:{on:true,brightness:42,temperature:3200}}]});
   assert.deepEqual(t.events.filter(e=>e[0]==='write').map(e=>e.slice(1)),[
-    [a,{on:true,brightness:42,temperature:3200}], [b,{on:false,brightness:23}]]);
+    [a,{on:true,brightness:42,temperature:3200}], [b,{on:false,brightness:23}], [a,{on:true,brightness:42,temperature:3200}]]);
   const resumed=t.restart();
   await resumed.stop();
-  assert.deepEqual(t.events.filter(e=>e[0]==='write').map(e=>e[1]),[a,b,a]);
+  assert.deepEqual(t.events.filter(e=>e[0]==='write').map(e=>e[1]),[a,b,a,a]);
   assert.deepEqual(t.events.filter(e=>e[0]==='stop').map(e=>e[1]),[[a,b],[a,b]]);
   assert.equal(t.record(),null);
   assert.equal(resumed.pending(),null);
 });
 
-test('write errors continue to other lamps, retain baseline and do not retry implicitly', async()=>{
+test('write errors continue to other lamps, get one bounded retry pass and keep the baseline', async()=>{
   const t=fixture({read:()=>({devices:[{id:a,reachable:true,state:{on:false,brightness:12,rgb:[0,1,2]}},
     {id:b,reachable:true,state:{on:true,brightness:100,rgb:[255,255,255]}}]}),
     write:id=>{if(id===a)throw Error('unknown write'); return {confirmed:true};}});
   await t.session.start([a,b]);
   await assert.rejects(t.session.stop());
-  assert.equal(t.events.filter(e=>e[0]==='write').length,2);
+  assert.equal(t.events.filter(e=>e[0]==='write').length,3);
+  assert.deepEqual(t.events.filter(e=>e[0]==='write').map(e=>e[1]),[a,b,a]);
   assert.deepEqual(t.record().devices,[{id:a,state:{on:false,brightness:12,rgb:[0,1,2]}}]);
 });
 
@@ -243,4 +245,25 @@ test('failed persistence of a confirmed restore halts further lamp effects and k
   assert.deepEqual(t.record().devices.map(d=>d.id),[a,b]);
   await t.restart().stop();
   assert.equal(t.record(),null);
+});
+
+test('a lamp that misses the first write is confirmed by the single retry pass without needing Manual again', async()=>{
+  let attempt=0;
+  const t=fixture({read:()=>({devices:[
+    {id:a,reachable:true,state:{on:true,brightness:42,temperature:3200}},
+    {id:b,reachable:true,state:{on:false,brightness:23,rgb:null,temperature:null}}]}),
+    write:id=>id===a && ++attempt===1 ? {confirmed:false} : {confirmed:true}});
+  await t.session.start([a,b]);
+  await t.session.stop();
+  assert.deepEqual(t.events.filter(e=>e[0]==='write').map(e=>e[1]),[a,b,a]);
+  assert.deepEqual(t.delays,[1500]);
+  assert.equal(t.record(),null);
+});
+
+test('no retry wait happens when every lamp is confirmed on the first pass', async()=>{
+  const t=fixture();
+  await t.session.start([a]);
+  await t.session.stop();
+  assert.deepEqual(t.delays,[]);
+  assert.equal(t.events.filter(e=>e[0]==='write').length,1);
 });

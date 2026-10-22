@@ -254,3 +254,12 @@ Auditoría `scripts/privacy-audit.cjs` y lectura de procesos, ejecutables y serv
 prueba aparte; `acr2`/`livepick-plus` quedan como están hasta confirmar que corren. Cualquier cambio
 debe ser reversible, con respaldo y lectura posterior, y se verifica con Content Store y apps de
 streaming abiertas. «Cero telemetría» no se puede demostrar con este método.
+
+### Prueba de detención en caliente (22 de octubre de 2026)
+
+Se envió una única señal `TERM` a `admanager` y `adoverlay-service` para ver si un bloqueo valdría
+la pena. `adoverlay-service` **volvió a aparecer** en segundos con otro PID (lo supervisa otro
+proceso) y `admanager` no se reinició de inmediato. Mi pantalla siguió en primer plano. Ambos
+mostraban 0 s de CPU antes. **No se instaló ningún hook persistente**: no hay ganancia medible de
+privacidad ni de recursos que justifique repetir kills o montar ejecutables inertes. `admanager`
+volverá cuando algo lo pida o al reiniciar.

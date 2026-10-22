@@ -287,3 +287,30 @@ segundos y el límite SSH de veinte segundos.
 - [Importación oficial de la base: transacción de ajustes e instancias](https://github.com/awawa-dev/HyperHDR/blob/e5bda285227cbd38bce60da6a442dde936fd9e7a/sources/db/DBManager.cpp).
 - [Reinicio del proceso después de `load-db`](https://github.com/awawa-dev/HyperHDR/blob/e5bda285227cbd38bce60da6a442dde936fd9e7a/sources/api/HyperAPI.cpp).
 - [Recreación del driver al cambiar `device` en caliente](https://github.com/awawa-dev/HyperHDR/blob/e5bda285227cbd38bce60da6a442dde936fd9e7a/sources/base/HyperHdrInstance.cpp).
+
+## Reintento de restauración y renovación de autorización (0.7.11)
+
+**Reintento.** Al volver a Manual, `stop` escribe el estado guardado de cada lámpara. Las que no
+confirman reciben **una** pasada más tras 1,5 s, con el mismo estado guardado (idempotente). Lo que
+siga sin confirmar permanece en el registro de recuperación y Manual lo reanuda, como antes. El
+motivo de las fallas del primer intento (UDP perdido o un último cuadro de HyperHDR) sigue sin
+aislarse. Tests: 651/651. No hay prueba física: el dueño debe usar Activar y Desactivar con YouTube.
+En el peor caso, con lámparas que no responden, la restauración tarda hasta el doble; el cliente
+espera 25 s para Manual.
+
+### Renovar la autorización de HyperHDR
+
+El 22 de octubre de 2026, tras instalar 0.7.11, `screenStatus` informó `configured: true`,
+`reason: "auth-required"`, sin recuperación pendiente. Un login directo con el token guardado
+también falló, y el archivo `screen-config.json` era idéntico al de antes de instalar; HyperHDR
+regenera su token cuando reinicia el daemon (ver arriba). **No se renovó**: la ruta del asistente
+(`Preparar captura`) reimporta el perfil, reinicia HyperHDR y exige que el dueño confirme
+físicamente las seis lámparas. Hasta renovarla, **Activar** no puede iniciar la captura.
+
+### Actualizar el paquete sin perder la captura
+
+Instalar un IPK nuevo con `appInstallService/dev/install` conserva `screen-config.json` (comprobado por
+hash) pero **regenera la definición LS2 del servicio**: vuelve a `run-js-service` sin root. Hay que
+restaurar la copia anterior de `/var/luna-service2-dev/services.d/com.frxn.mipantalla.lights.service`
+y ejecutar `ls-control scan-services`; sin eso el servicio no arranca bajo root. Respaldos de esta
+actualización: `/var/lib/mipantalla-maintenance/launcher-0711/` (incluye el IPK 0.7.10 para volver).

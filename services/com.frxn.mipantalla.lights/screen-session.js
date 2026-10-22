@@ -140,23 +140,36 @@ function create(options) {
       });
     });
   }
-  function restore(record) {
-    var attempted = record.devices.slice();
-    var chain = Promise.resolve();
-    record.phase = 'restoring';
-    save(record);
-    attempted.forEach(function (entry) {
-      chain = chain.then(function () {
+  // WiZ answers over UDP and can miss the first write right after HyperHDR stops, so lamps that
+  // were not confirmed get one more pass after a short wait. Writes repeat the same saved
+  // baseline, so they are idempotent. Anything still unconfirmed stays in the recovery record.
+  var retryDelay = typeof options.retryDelayMs === 'number' ? options.retryDelayMs : 1500;
+  function wait(ms) {
+    if (typeof options.delay === 'function') return Promise.resolve().then(function () { return options.delay(ms); });
+    return new Promise(function (resolve) { setTimeout(resolve, ms); });
+  }
+  function restorePass(record) {
+    var chain = Promise.resolve(record);
+    record.devices.slice().forEach(function (entry) {
+      chain = chain.then(function (current) {
         return Promise.resolve().then(function () { return options.write(entry.id, stateOf(entry.state)); }).then(function (ack) {
-          if (!ack || ack.confirmed !== true) return;
-          var next = {phase:'restoring', ids:record.ids, devices:record.devices.filter(function (device) { return device.id !== entry.id; })};
+          if (!ack || ack.confirmed !== true) return current;
+          var next = {phase:'restoring', ids:current.ids, devices:current.devices.filter(function (device) { return device.id !== entry.id; })};
           save(next);
-          record = next;
-        }, function () {});
+          return next;
+        }, function () { return current; });
       });
     });
-    return chain.then(function () {
-      if (record.devices.length) throw failure('SCREEN_RESTORE_PENDING');
+    return chain;
+  }
+  function restore(record) {
+    record.phase = 'restoring';
+    save(record);
+    return restorePass(record).then(function (left) {
+      if (!left.devices.length) return left;
+      return wait(retryDelay).then(function () { return restorePass(left); });
+    }).then(function (left) {
+      if (left.devices.length) throw failure('SCREEN_RESTORE_PENDING');
       try { store.clear(); } catch (error) { throw failure('SCREEN_PERSIST_FAILED'); }
       return {active:false, pending:false};
     });
