@@ -126,7 +126,7 @@ No instalar si falla. Esto no prueba permisos ni comportamiento físico de la TV
 ### Paquete público fijado para el piloto
 
 El [release v0.7.14](https://github.com/frxnnk/webos-liquid-glass-launcher/releases/tag/v0.7.14)
-contiene un IPK público limpio: **82 archivos, 1.714.784 bytes**, SHA-256
+contiene un IPK público limpio: **81 archivos, 1.714.784 bytes**, SHA-256
 `12ccbf8b9e45e753c55ded8ee9a18415a05c64bb9e989a7801d811122d0138f8`.
 No incluye `weather-config.js`, `lights-config.js` ni `screen-config.json`; difiere del paquete
 privado instalado anteriormente. El asistente lo descarga y verifica sólo si la app está

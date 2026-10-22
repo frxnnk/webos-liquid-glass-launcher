@@ -129,7 +129,7 @@ hasta 25 s y conservan la recuperación pendiente si falta confirmación.
 ## Paquete público fijado
 
 [Release v0.7.14](https://github.com/frxnnk/webos-liquid-glass-launcher/releases/tag/v0.7.14):
-`com.frxn.mipantalla_0.7.14_all.ipk`, **82 archivos, 1.714.784 bytes**.
+`com.frxn.mipantalla_0.7.14_all.ipk`, **81 archivos, 1.714.784 bytes**.
 
 ```text
 SHA-256: 12ccbf8b9e45e753c55ded8ee9a18415a05c64bb9e989a7801d811122d0138f8
