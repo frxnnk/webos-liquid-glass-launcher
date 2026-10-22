@@ -317,7 +317,7 @@
       return;
     }
     var scope = editing ? panel : document;
-    var selector = editing ? 'button:not([disabled])' : '.dock button:not([disabled]), .top-actions button:not([disabled])';
+    var selector = editing ? 'button:not([disabled])' : '.dock button:not([disabled]), .topbar button:not([disabled])';
     var buttons = Array.prototype.slice.call(scope.querySelectorAll(selector)).filter(function (button) {
       return button.getClientRects().length > 0;
     });
@@ -410,6 +410,15 @@
       say: say
     });
   }
+  window.LauncherWallpaperMode.mount({
+    button: document.getElementById('wallpaper-button'),
+    root: document.documentElement,
+    shell: document.querySelector('.shell'),
+    onExit: function () {
+      dockScroll.refresh();
+      if (backgrounds) backgrounds.layout();
+    }
+  });
   setInterval(function () {
     updateClock();
     if (weather) weather.tick(); // reetiqueta un dato que envejece aunque no haya red

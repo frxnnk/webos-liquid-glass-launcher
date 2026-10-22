@@ -14,7 +14,7 @@ function regularFile(file) {
   const stat = fs.lstatSync(file);
   if (stat.isSymbolicLink() || !stat.isFile()) throw Error('Debe ser un archivo regular, no un enlace: ' + path.relative(root, file));
 }
-for (const file of ['index.html', 'styles.css', 'config.js', 'bridge.js', 'app-catalog.js', 'apps-manager.js', 'apps-manager.css', 'dock-scroll.js', 'weather.js', 'backgrounds.js', 'daily-photos.js', 'transitions.js', 'ambient-wallpaper.js', 'lights-client.js', 'lights-panel.js', 'lights-panel.css', 'app.js', 'appinfo.json', 'icon.png', 'LICENSE']) {
+for (const file of ['index.html', 'styles.css', 'config.js', 'bridge.js', 'app-catalog.js', 'apps-manager.js', 'apps-manager.css', 'dock-scroll.js', 'wallpaper-mode.js', 'weather.js', 'backgrounds.js', 'daily-photos.js', 'transitions.js', 'ambient-wallpaper.js', 'lights-client.js', 'lights-panel.js', 'lights-panel.css', 'app.js', 'appinfo.json', 'icon.png', 'LICENSE']) {
   regularFile(path.join(root, file));
   fs.copyFileSync(path.join(root, file), path.join(output, file));
 }

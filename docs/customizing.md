@@ -3,6 +3,17 @@
 Desde la **0.7.9**, Personalizar permite sumar las apps instaladas que la TV ofrece para abrir,
 además de los accesos iniciales de Mi pantalla.
 
+## Modo Solo fondo (0.7.10)
+
+**Personalizar** está arriba a la izquierda, en el lugar de la marca. **Solo fondo**, junto a
+Luces, oculta el dock, reloj, clima y textos para dejar la imagen a pantalla completa.
+La galería conserva su rotación y las fotos diarias.
+
+Para volver, pulsá **OK**, **Atrás** o una flecha; con puntero, hacé un clic. La primera
+pulsación sólo recupera la interfaz y el foco, sin abrir una app. Volumen y reproducción
+siguen disponibles. Al salir de Mi pantalla, el modo se desactiva; al volver aparece el inicio.
+No se guarda como modo de arranque. Los créditos de las fotos se consultan en Personalizar → Fuentes.
+
 ## Agregar u ocultar
 
 1. Abrí **Personalizar**. Se consulta el catálogo de la TV al abrir el panel; el encendido del

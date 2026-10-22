@@ -1,6 +1,6 @@
 {
   "name": "com.frxn.mipantalla.lights",
-  "version": "0.7.9",
+  "version": "0.7.10",
   "main": "service.js",
   "private": true,
   "description": "Control local acotado de WiZ para Mi pantalla; sin servidor HTTP ni comandos de shell."

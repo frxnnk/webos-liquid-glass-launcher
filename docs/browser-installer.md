@@ -16,7 +16,7 @@ operaciones que requieren root ya comprobado. No es una web estática universal.
 
 El compañero escucha sólo en loopback, con puerto dinámico y sesión local. No agrega un agente
 de instalación permanente en la TV ni permite una shell arbitraria desde la página. El frontend
-del launcher y el instalador de PC son programas distintos; Mi pantalla está en 0.7.9; su botón Pantalla completa sigue pendiente de prueba física.
+del launcher y el instalador de PC son programas distintos; Mi pantalla está en 0.7.10; su botón Pantalla completa sigue pendiente de prueba física.
 
 ## Qué impide hacerlo todo con JavaScript en el browser
 
@@ -111,8 +111,8 @@ El plan vence en cinco minutos y se vuelve a validar antes de escribir. Los paso
 privado y respaldo local/remoto. Una consulta de recuperación busca el destino original sin
 repetir automáticamente una operación que terminó con timeout.
 
-Puede instalar el IPK público 0.7.9 si la app falta, preparar Home y sus hooks propios, aplicar
-el perfil acotado de privacidad y retirar sólo tres apps LG elegidas. Con 0.7.9 presente omite
+Puede instalar el IPK público 0.7.10 si la app falta, preparar Home y sus hooks propios, aplicar
+el perfil acotado de privacidad y retirar sólo tres apps LG elegidas. Con 0.7.10 presente omite
 la instalación; otra versión bloquea ese paso hasta resolver preservación de actualizaciones.
 Restaurar no reinstala apps retiradas ni desinstala automáticamente un paquete nuevo.
 [Guía exacta, release fijado, SHA-256 y límites](local-installer.md).
@@ -124,11 +124,11 @@ las lámparas, incluso tras una sesión pendiente. En 0.7.6 el dueño confirmó 
 en seis WiZ y una lectura independiente verificó su restauración 6/6 al desactivar, incluidas
 dos en escena 6. Un ACK solo no acredita esos resultados. [Recorrido](local-installer.md#luces-siguiendo-el-video).
 
-La 0.7.9 espera la habilitación efectiva de `LEDDEVICE` y corrige el estado activo/preparado
+La 0.7.10 espera la habilitación efectiva de `LEDDEVICE` y corrige el estado activo/preparado
 en la UI de la TV. La confirmación anterior desde PC no valida el botón Pantalla completa
 de esta versión: esa prueba física sigue pendiente. [Corrección y alcance](screen-sync.md).
 
-La 0.7.9 exige el [parche nativo experimental](capture-repair.md) para iniciar captura.
+La 0.7.10 exige el [parche nativo experimental](capture-repair.md) para iniciar captura.
 Preparar no lo instala automáticamente: PicCap oficial sin ese parche no habilita Start.
 
 `scripts/privacy-audit.cjs` continúa siendo un CLI separado de sólo lectura. No instala ni
@@ -158,8 +158,8 @@ no todos los cambios, y los journals no prueban tolerancia a pérdida total de a
 - Validar la cadena experimental de root desde stock, con huellas SSH verificadas, recuperación
   e inicio físico; no repetir ese recorrido sobre una TV que ya tiene root.
 - Probar persistencia de captura tras reinicio, HDMI y contenido protegido.
-- Confirmar desde el botón Pantalla completa de la TV la activación y parada de 0.7.9.
+- Confirmar desde el botón Pantalla completa de la TV la activación y parada de 0.7.10.
 
-El release público 0.7.9 sin configuración del hogar ya está disponible y su SHA-256 queda fijado
+El release público 0.7.10 sin configuración del hogar ya está disponible y su SHA-256 queda fijado
 en el motor. Tener ese paquete y las acciones implementadas no demuestra todavía un recorrido
 completo de instalación y restauración sobre una TV original.

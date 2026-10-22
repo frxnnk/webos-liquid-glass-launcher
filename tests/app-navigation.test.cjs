@@ -14,7 +14,7 @@ function harness(onTV, editing = false) {
     return controls.filter((button) => (!group || button.group === group) && selector.split(',').some((part) => {
       if (button.disabled) return false;
       if (part.includes('.dock') && button.group !== 'dock') return false;
-      if (part.includes('.top-actions') && button.group !== 'top') return false;
+      if ((part.includes('.top-actions') || part.includes('.topbar')) && button.group !== 'top') return false;
       return true;
     }));
   }
