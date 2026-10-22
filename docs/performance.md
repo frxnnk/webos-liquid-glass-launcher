@@ -230,3 +230,54 @@ Pasaron **306/306 pruebas**, build, vista previa y verificación del IPK: **58 a
 **18 del servicio**, **1.693.534 bytes**. SHA-256:
 `362c72279a351595750d34de36c336e69ecd10c75bbfa1a99699176aa4b8610a`.
 El auditor CLI queda en el repositorio, fuera del IPK: no añade un servicio residente a la TV.
+
+## Línea base del 22 de octubre de 2026 (0.7.15)
+
+Medida de solo lectura por SSH en la 49UN7310PSC (webOS 5.6.2). Los datos crudos quedan privados en
+`artifacts/` (ignorado por Git); esto resume lo que se puede afirmar.
+
+**Hardware y entorno.** SoC Realtek `rtd288o`, **ARMv7 de 32 bits**, 4 núcleos, kernel 4.4.84, glibc 2.28,
+Node 8.12, **1,1 GB de RAM**. Eso descarta correr en la TV programas que pidan 64 bits o Node 18+.
+
+**Corrección de un diagnóstico anterior.** Se dijo que la lentitud podía venir de swap sobre la flash y que había
+«35 procesos esperando disco». No se sostiene:
+
+- El **load average de ~36 es un artefacto de este kernel**: 32 de los 35 procesos en estado `D` son hilos del
+  kernel del driver Realtek (`check_usb`, `PCRTRACK`, `rtkaudio_flow_t`, `hdmi_task`…) durmiendo en `msleep` o
+  `down_timeout`. Es su forma normal de estar inactivos. No debe usarse para decidir nada.
+- En reposo **no hay actividad de swap**: `pswpin` y `pswpout` en 0 por segundo durante 10 s, sin fallos mayores.
+  Hay ~460 MB de swap ocupado, pero es memoria fría de apps aparcadas (p. ej. YouTube, 61 MB).
+- Memoria disponible ~227–310 MB; CPU total ~20 %. Lo más alto en la muestra fue la propia sonda (3,2 %).
+
+**Costo real de volver al inicio** (3 repeticiones cada uno, relanzando Mi pantalla desde HDMI 1, con
+suscripción al primer plano en la TV y CDP para los tiempos de pintado):
+
+| Caso | A primer plano | Primer pintado (FCP) | Carga | Swap-in |
+| --- | --- | --- | --- | --- |
+| **Aparcada** (Home con la app viva) | **110 ms** (110/117/109) | — (no recarga) | — | 20–56 páginas |
+| **Arranque en frío** (app cerrada) | **~2,6 s** (2,7/2,6/2,1) | 0,76–0,97 s | 1,5–2,1 s | 72–1146 páginas |
+
+Volver con Home es prácticamente instantáneo. Solo el arranque en frío (encendido, o cuando LG cierra la app por
+memoria) tarda segundos. Dentro de la página, 20 scripts síncronos (~200 KB de JS) ocupan ~0,6 s hasta
+`domInteractive` (607 ms) y el primer pintado llega a ~0,8 s; el resto hasta primer plano es de la TV (arranque
+del renderer). El pedido del clima tarda ~1 s pero no bloquea el pintado.
+
+**Qué quedaría por ganar, y por qué no se tocó.** Cargar tarde `lights-panel.js` (41 KB), `lights-client`,
+`apps-manager` y `ambient-wallpaper` después del primer pintado recortaría como mucho ~100–200 ms del arranque en
+frío (≈5–8 % del total), a costa de reestructurar el montaje del panel. No se hizo: la mejora es pequeña frente
+al costo y el riesgo, y el caso frecuente (Home) ya es de 110 ms. Tampoco se detuvo ni deshabilitó ningún servicio
+por esta medición.
+
+## Estado de privacidad y protección del root el 22 de octubre de 2026
+
+- **Life's Good Without Spying está activo** (hook `50-lifesgoodwithoutspying`, creado a la 01:54; no lo aplicó
+  este proyecto). Según su propio registro: 430 dominios en `/etc/hosts`, 38 ejecutables de publicidad/ACR y 17 de
+  voz reemplazados por stubs, ThinQ sin bloquear. `admanager`, `nudge`, `rdxd`, `uploadd`, `sportsalarm`,
+  `acr2` y `livepick` ya no corren; `remotelogger` y `crashd` siguen. El hook propio de `rdxd` quedó redundante.
+- **Actualizaciones del sistema:** Homebrew Channel tenía `blockUpdates: false`; los servidores de firmware
+  (`snu.lge.com`, `su.lge.com`, `su-ssl.lge.com`, `su-dev.lge.com`) no estaban bloqueados, aunque `appUpdateMode`
+  era `manual`. Se activó el bloqueo oficial de Homebrew Channel (archivo `webosbrew_block_updates`, aplica en
+  cada arranque) y se agregaron esas mismas líneas a `/etc/hosts` para que valga sin reiniciar; respaldo previo
+  en `/var/lib/mipantalla-maintenance/hosts-before-blockupdates-*.bak`. La Content Store sigue resolviendo
+  (`us.lgappstv.com`). Revertir: `setConfiguration {"blockUpdates":false}` y quitar esas líneas. Efecto
+  colateral esperado: «Actualización de software» de la TV no podrá consultar firmware.
