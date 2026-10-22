@@ -15,8 +15,8 @@ propia. Lo siguiente es una propuesta de producto: no describe funciones ya impl
   Persistencia de captura tras reinicio, HDMI y contenido protegido siguen pendientes.
 - Se retiraron tres apps LG removibles y se comprobaron preferencias de promociones apagadas.
   Eso no demuestra que la TV haya dejado de enviar datos ni elimina los anuncios de otras apps.
-- Un acceso configurado no prueba que su app esté instalada. La última limpieza no encontró
-  Nuvio; no se afirma instalada. PicCap 0.5.3 e HyperHDR 22.0.1 se reinstalaron y su pipeline
+- Un acceso configurado no prueba que su app esté instalada. Nuvio 1.2.9 se reinstaló el 22 de octubre de 2026 y figura
+  en el inventario; login y reproducción no se verificaron. PicCap 0.5.3 e HyperHDR 22.0.1 se reinstalaron y su pipeline
   se recuperó y probó con YouTube en 0.7.6. [Estado de captura](screen-sync.md).
 
 Fuentes del estado: [rendimiento](performance.md), [Luces](lights.md),

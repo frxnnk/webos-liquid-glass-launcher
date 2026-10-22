@@ -212,7 +212,10 @@ Chromium 68), `appId` `space.nuvio.webos`.
 - El paquete incluye su servicio acompañante; no hace falta otro backend.
 
 Este repo no redistribuye el IPK. Link al release oficial en el [tutorial](tutorial.md#9-vista-previa-y-siguientes-pasos).
-La instalación histórica no acredita que Nuvio siga instalado en el inventario actual.
+El 22 de octubre de 2026 se reinstaló: el IPK local coincidía con el SHA-256 publicado, se subió por SSH,
+se repitió el hash en la TV y se instaló con `appInstallService/dev/install`. `listApps` mostró
+`space.nuvio.webos` 1.2.9 («Nuvio TV») y su servicio. Se borró el archivo temporal. Login y
+reproducción siguen sin verificarse; los hace el dueño.
 
 ## Empaquetado
 

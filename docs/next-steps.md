@@ -33,6 +33,23 @@ Estas referencias sirven para tomar decisiones, no para copiar su interfaz compl
 | [Apple TV 4K](https://www.apple.com/apple-tv-4k/) | Composición de TV, fotografía y foco evidente a distancia; una jerarquía sencilla alrededor del dock. |
 | [Apps de Bang & Olufsen](https://www.bang-olufsen.com/en/int/story/apps) | Controles claros, calma visual y acentos marfil/ámbar para Luces, sin llenar todo de brillos. |
 | [Roon](https://roon.app/en/music) | Jerarquía editorial y carátulas para una futura vista musical de Transitions. |
+| [Designeer](https://designeer.xyz/) (22 de octubre de 2026) | Es un catálogo de galerías y trabajos web/producto, no de interfaces de TV; se revisó su sección Finds/Interface a mano. Sirve como principios: ver abajo. |
+
+### Ideas tomadas de Designeer (no implementadas)
+
+1. **Control segmentado con una sola celda encendida:** un contenedor suave tipo píldora y un único
+   elemento activo, para Luces (encendido, brillo, blancos) en vez de varios botones sueltos.
+2. **Superficies claras, de capa única, sin bordes duros:** relieve sutil en lugar de marcos, en
+   línea con el vidrio más discreto elegido.
+3. **Contraste editorial en tipografía:** una palabra de acento en cursiva junto a la sans para
+   hora o saludo; una sola excepción tipográfica, no un sistema nuevo.
+4. **Textura de puntos monocroma para estados** (sin captura, sin red), como alternativa a íconos
+   brillantes.
+5. **Descartado por rendimiento:** tarjetas 3D colgantes, parallax y shaders. Chromium 68 en esta TV
+   no justifica sumar efectos; cualquier cambio visual debe medirse como en [performance.md](performance.md).
+
+Otras galerías enlazadas desde Designeer para seguir mirando: Mobbin, Details, Minimal Gallery y
+Backgrounds Supply. Estas ideas salen de capturas de pantalla, no de pruebas en la TV.
 
 El dueño eligió **Apple TV como dirección principal y rendimiento como prioridad**, con la calma
 de B&O: menos brillo en los bordes,

@@ -46,7 +46,8 @@ La causa y una corrección permanente siguen pendientes.
   [Personalizar](docs/customizing.md) conserva las preferencias anteriores y funciona con el
   último catálogo guardado si falla la consulta. Los accesos iniciales son YouTube, Spotify, Nuvio, Netflix, Disney+,
   Transitions/Bedrock, Homebrew Channel y HDMI 1. Los IDs se verifican por modelo: un acceso
-  configurado no significa que la app esté instalada. Nuvio no apareció en el último inventario.
+  configurado no significa que la app esté instalada. Nuvio 1.2.9 se instaló el 22 de octubre de 2026
+  (inventario: `space.nuvio.webos`); login y reproducción no se verificaron.
 - Modo **Solo fondo**: foto a pantalla completa, sin textos ni controles. Mantiene la
   rotación de la galería; la primera tecla de salida sólo recupera la interfaz.
 - Ilustración local desde el primer pintado, foto con fundido y una selección diaria de

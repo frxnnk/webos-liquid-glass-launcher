@@ -24,8 +24,8 @@ No se guarda como modo de arranque. Los créditos de las fotos se consultan en P
 4. Si instalaste otra app, usá **Actualizar apps** o cerrá y volvé a abrir Personalizar.
 
 Ocultar un acceso **no desinstala la app**. Agregarlo tampoco instala nada: abre la aplicación
-que ya está en la TV. Por ejemplo, Nuvio tiene un acceso inicial, pero no estaba instalada en el
-último inventario de esta unidad; ese acceso no reemplaza su instalación.
+que ya está en la TV. Por ejemplo, Nuvio tiene un acceso inicial; en esta unidad se instaló el 22 de octubre de 2026
+y aparece en el inventario, pero un acceso por sí solo no reemplaza su instalación.
 
 ## Cambiar el orden con el control
 

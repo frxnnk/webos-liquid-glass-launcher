@@ -131,7 +131,7 @@ Este plan queda **pendiente**; no describe una ejecución terminada.
 | --- | --- | --- |
 | Revisar consentimientos opcionales | Pendiente: leer y retirar sólo los acuerdos no necesarios para las funciones elegidas | Acuerdos y servicios necesarios para las apps y la tienda |
 | Retirar apps removibles sin uso | Tres LG y cuatro de terceros retiradas; seis candidatas conservadas por selección del dueño | Apps del usuario y herramientas de recuperación |
-| Frenar objetivos de ACR/publicidad | Pendiente: inventariar rutas presentes y aplicar sólo una lista revisada con respaldo | Voz, conectividad, ThinQ, UPnP, Settings, reproducción y DRM |
+| Frenar objetivos de ACR/publicidad | Inventario hecho el 22 de octubre de 2026 (ver abajo); falta que el dueño apruebe una lista antes de aplicar nada | Voz, conectividad, ThinQ, UPnP, Settings, reproducción y DRM |
 | Filtrar endpoints específicos | Pendiente: lista pequeña, prueba por lote y restauración comprobada | SDP, actualizaciones, tienda y resolución normal de DNS |
 | DNS residente, voz y purga | Fuera del primer perfil; no aplicados | No sumar un proxy ni borrar registros al probar el primer lote |
 
@@ -234,3 +234,23 @@ no explica por sí sola un consumo ni certifica ausencia de telemetría.
 
 El auditor no es el instalador automático propuesto para el navegador. Es un primer paso
 reutilizable de lectura y diagnóstico; instalar y cambiar el sistema requiere otra fase.
+
+## Inventario de objetivos de anuncios/ACR (22 de octubre de 2026, sólo lectura)
+
+Auditoría `scripts/privacy-audit.cjs` y lectura de procesos, ejecutables y servicios en la 49UN7310PSC
+(webOS 5.6.2, 120 apps). No se detuvo, montó ni modificó nada.
+
+- Preferencias de promociones, cookies publicitarias, anuncios personalizados, recomendación
+  personal, Live Plus, promoción de Live y video promocional siguen en `off`.
+- **Corriendo ahora:** `admanager`, `adoverlay-service`, `nudge`, `rdxd`, `uploadd`,
+  `sportsalarm`, `remotelogger` y `crashd`. Que corran no prueba que envíen datos.
+- **Presentes pero sin proceso en la muestra:** `acr2` y `livepick-plus` (hay ejecutable y servicio luna).
+- No hay montajes inertes ni Life's Good Without Spying. Hooks activos en Homebrew:
+  `59-mipantalla-home-guard`, `60-mipantalla-home` y `61-mipantalla-privacy-rdxd`.
+
+**No se aplicó ningún bloqueo.** Candidatos de menor riesgo para revisar con el dueño: `admanager` y
+`adoverlay-service` (publicidad del Home de LG, que ya no se usa). `nudge`, `sportsalarm`,
+`uploadd` y `remotelogger` podrían afectar notificaciones, deportes o diagnósticos y requieren
+prueba aparte; `acr2`/`livepick-plus` quedan como están hasta confirmar que corren. Cualquier cambio
+debe ser reversible, con respaldo y lectura posterior, y se verifica con Content Store y apps de
+streaming abiertas. «Cero telemetría» no se puede demostrar con este método.
