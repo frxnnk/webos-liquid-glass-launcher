@@ -22,7 +22,7 @@ function fixture(options={}){
     stop:async()=>{events.push('led-stop');assert.equal(captureOn,false,'capture must be stopped before LED stop');ledOn=false;return {active:false};}};
   const store={load:()=>record&&clone(record),save:value=>{events.push('save-'+value.phase);
     if(options.failActiveSave&&value.phase==='active')throw Error('disk failed');record=clone(value);},clear:()=>{events.push('clear');record=null;}};
-  const fakes={path,'./screen-settings':()=>({enabled:true}),'./hyperhdr-rpc':()=>({}),
+  const fakes={path,'./screen-settings':()=>({enabled:true}),'./hyperhdr-rpc':()=>({}),'./hyperhdr-renew':()=>({renew:()=>Promise.reject(Error('RENEW_UNAVAILABLE'))}),
     './screen-backend':()=>backend,'./screen-session':require('../services/com.frxn.mipantalla.lights/screen-session'),
     './screen-store':()=>store};
   const mod={exports:{}};

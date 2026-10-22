@@ -54,9 +54,21 @@ module.exports = function createBackend(options) {
     if (typeof config.token !== 'string' || !config.token || config.token.length > 2048 || /[\x00-\x1f]/.test(config.token) ||
         typeof config.profile !== 'string' || !config.profile || config.profile.length > 80) throw failure('config-invalid');
   }
+  // HyperHDR regenerates its token whenever the daemon restarts. One renewal per failed connect;
+  // the renewer applies its own cooldown, and any renewal error keeps the original auth-required result.
+  function connectRenewing() {
+    return options.rpc.connect().catch(function (error) {
+      if (!error || error.code !== 'HYPERHDR_AUTH_REQUIRED' || typeof options.renew !== 'function') throw error;
+      return Promise.resolve().then(options.renew).then(function (token) {
+        if (typeof token !== 'string' || !token) throw error;
+        config.token = token;
+        return options.rpc.connect();
+      },function () { throw error; });
+    });
+  }
   function use(action) {
     var session;
-    return Promise.resolve().then(function () { configured(); return options.rpc.connect(); }).then(function (connection) {
+    return Promise.resolve().then(function () { configured(); return connectRenewing(); }).then(function (connection) {
       session = connection; return action(session);
     }).then(function (result) { if (session) session.close(); return result; },function (error) {
       if (session) session.close(); throw error;

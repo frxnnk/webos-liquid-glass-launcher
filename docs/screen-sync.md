@@ -314,3 +314,58 @@ hash) pero **regenera la definición LS2 del servicio**: vuelve a `run-js-servic
 restaurar la copia anterior de `/var/luna-service2-dev/services.d/com.frxn.mipantalla.lights.service`
 y ejecutar `ls-control scan-services`; sin eso el servicio no arranca bajo root. Respaldos de esta
 actualización: `/var/lib/mipantalla-maintenance/launcher-0711/` (incluye el IPK 0.7.10 para volver).
+
+## Modo Auto y renovación automática (0.7.12)
+
+### Renovación del token (verificada en la TV)
+
+Cuando HyperHDR rechaza el token guardado (`HYPERHDR_AUTH_REQUIRED`), el servicio de luces hace **un**
+login local con la contraseña que ya guarda la TV, obtiene el token vigente y lo escribe en
+`credentials.json` y en `screen-config.json` (primero credenciales con `previousToken`, luego la
+configuración, y al final se limpia `previousToken`). Así el asistente de PC sigue aceptando ese
+estado. Solo actúa como root con archivos `600`, solo si el estado es exactamente el preparado, con un
+enfriamiento de 30 s y sin reiniciar HyperHDR ni tocar su perfil. Si algo no coincide, queda
+`auth-required` y se usa «Preparar captura». El login está en `hyperhdr-login.js`, separado de la lista
+blanca de `hyperhdr-rpc.js`.
+
+Comprobado el 22 de octubre de 2026: antes `reason: "auth-required"`; después `available: true`,
+`ready: true`, `captureStartReady: true`, `outputEnabled: false`; ambos archivos con el mismo token,
+permisos `600` y `previousToken: null`. No se inició la captura.
+
+### Auto: cómo funciona
+
+Es un interruptor en el panel de Luces (cuarta tarjeta). **Viene apagado.** Al activarlo, el servicio
+guarda `/var/lib/mipantalla-maintenance/auto-sync/config.json` y lanza `auto-sync.js`, un proceso root
+propio (no el vigilante de Home). Ese proceso se suscribe a la app en primer plano y al estado de energía
+y llama al servicio de luces con `luna-send` como Mi pantalla, de modo que el servicio sigue siendo
+el único dueño de la sesión de captura y de su registro de recuperación.
+
+- **Lista permitida:** solo YouTube (`youtube.leanback.v4`). Netflix y Disney+ quedan fuera hasta
+  probar el efecto del DRM en los cuadros capturados. La API no permite cambiar la lista.
+- **Entrar a YouTube:** espera 3 s (para no actuar en cambios rápidos), comprueba `screenStatus` y
+  recién entonces inicia Pantalla completa para las lámparas seleccionadas en `lights-config.js`.
+- **Salir de YouTube o dejar Activo (reposo):** vuelve a Manual (restaura las lámparas); al salir espera 1,5 s,
+  en reposo actúa de inmediato.
+- **Sesión del dueño:** si Pantalla completa ya estaba activa, Auto no la toca ni la detiene.
+- **Recuperación pendiente:** la reanuda con Manual antes de iniciar.
+- **Fallos:** el inicio se reintenta a los 15 s y a los 30 s y se rinde hasta que salgas de la app; la
+  detención se reintenta cada 5 s hasta 6 veces. Nunca hay más de una acción a la vez.
+- **Apagarlo:** el proceso restaura lo que él inició y termina solo (≈3 s). Arranca de nuevo al encender
+  la TV únicamente si el interruptor sigue encendido (lo lanza `home-autostart.sh`).
+
+La tarjeta muestra Desactivado, Activado · esperando YouTube, preparando, sincronizando, sesión
+manual, restaurando luces o el error. El estado vive en `state.json` (se considera vencido tras 90 s).
+
+### Qué se probó y qué no
+
+Probado: 695 tests (vigilante con reloj simulado, archivos privados, panel y renovación). En la TV se
+comprobó el ciclo activar → proceso root vivo → desactivar → proceso terminado y estado `off`.
+Una corrección posterior (la suscripción usaba `luna-send -f`, cuyo JSON multilínea el lector
+descartaba) solo está probada con tests hasta validarla en la TV. **Sin probar:** que entrar a YouTube
+inicie la captura, que salir restaure las seis lámparas, el comportamiento al apagar la TV y la carga de CPU.
+
+### Vista previa local
+
+`node scripts/serve.cjs` y `http://127.0.0.1:43817/?demo=lights` abren el panel con un servicio de
+luces simulado (`&auto=off|idle|waiting|syncing|stopping|error` elige el estado de Auto). Solo es
+local y no está en el IPK.

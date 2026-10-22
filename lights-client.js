@@ -123,6 +123,11 @@
       discover:function () { return request('discover',{}); },
       getState:function (payload) { return request('getState',payload); },
       screenStatus:function (payload) { return request('screenStatus',payload); },
+      autoStatus:function () {
+        if (!onTV) return Promise.resolve({available:false,enabled:false,state:'off',reason:'preview'});
+        return request('autoStatus',{});
+      },
+      setAuto:function (payload) { return request('setAuto',payload); },
       setState:function (payload) {
         stopAmbient(); return request('setState',payload).then(function (result) {
           if (result.mode === 'manual') mode = 'manual'; return result;

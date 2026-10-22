@@ -68,6 +68,14 @@
 .lights-mode[aria-pressed="true"] { background: rgba(189, 228, 207, .1); }
 .lights-mode[aria-pressed="true"] .lights-mode-state { color: #bde4cf; }
 
+/* Auto is a fourth card with a switch: the only moving part is a 1 rem dot. */
+.lights-auto-switch { position: absolute; top: 1rem; right: 1rem; width: 2.4rem; height: 1.35rem; border-radius: 1rem; background: rgba(255, 255, 255, .16); }
+.lights-auto-switch:after { content: ""; position: absolute; top: .19rem; left: .19rem; width: .97rem; height: .97rem; border-radius: 50%; background: rgba(255, 255, 255, .75); }
+.lights-auto[aria-pressed="true"] .lights-auto-switch { background: #bde4cf; }
+.lights-auto[aria-pressed="true"] .lights-auto-switch:after { left: 1.24rem; background: #1c342b; }
+.lights-auto:disabled .lights-auto-switch { opacity: .5; }
+.lights-row > .lights-auto:last-child { margin-right: 0; }
+
 /* Colored light and useful white temperatures share one palette. */
 .lights-palette { display: flex; margin-top: 1.4rem; padding: 1.15rem 0 0; border-top: 1px solid rgba(255, 255, 255, .1); }
 .lights-group-colors { flex: 1; min-width: 0; }

@@ -54,4 +54,7 @@ if command -v nohup >/dev/null 2>&1; then
 else
   "$NODE" "$WATCH" --boot --watch --poll-ms="$POLL_MS" "$@" >>"$LOGFILE" 2>&1 &
 fi
+
+# Auto mode (opt-in): its own script decides whether anything needs to start.
+[ -r "$DIR/auto-autostart.sh" ] && /bin/sh "$DIR/auto-autostart.sh" >/dev/null 2>&1 || true
 exit 0

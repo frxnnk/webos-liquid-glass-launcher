@@ -2,6 +2,7 @@
 var path = require('path');
 var loadSettings = require('./screen-settings');
 var createRpc = require('./hyperhdr-rpc');
+var createRenewer = require('./hyperhdr-renew');
 var createBackend = require('./screen-backend');
 var createSession = require('./screen-session').create;
 var createStore = require('./screen-store');
@@ -10,7 +11,8 @@ module.exports = function createScreenControl(lamps, options) {
   var config = loadSettings(path.join(__dirname,'screen-config.json'));
   var capture = options.capture, now = options.now || Date.now;
   function read(ids) { return lamps.read({ids:ids}); }
-  var backend = createBackend({config:config,read:read,probe:options.probe,rpc:{
+  var renewer = options.renewer || createRenewer({configFile:path.join(__dirname,'screen-config.json')});
+  var backend = createBackend({config:config,read:read,probe:options.probe,renew:renewer.renew,rpc:{
     connect:function () { return createRpc({token:config.token}).connect(); }
   }});
   function unavailable() { return Promise.reject(Error('PICCAP_UNAVAILABLE')); }

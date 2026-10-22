@@ -9,7 +9,7 @@ test('screen wiring adapts selected id arrays to the existing lamp API payload f
   const fakes={
     path,
     './screen-settings':()=>({enabled:false}),
-    './hyperhdr-rpc':()=>({}),
+    './hyperhdr-rpc':()=>({}),'./hyperhdr-renew':()=>({renew:()=>Promise.reject(Error('RENEW_UNAVAILABLE'))}),
     './screen-backend':options=>{backendRead=options.read;backendProbe=options.probe;return {inspect:async()=>({ready:false})};},
     './screen-session':{create:options=>{sessionRead=options.read;return {pending:()=>null};}},
     './screen-store':()=>({})
@@ -26,7 +26,7 @@ test('screen wiring adapts selected id arrays to the existing lamp API payload f
 
 function statusHarness(report,record) {
   const mod={exports:{}};
-  const fakes={path,'./screen-settings':()=>({enabled:true}),'./hyperhdr-rpc':()=>({}),
+  const fakes={path,'./screen-settings':()=>({enabled:true}),'./hyperhdr-rpc':()=>({}),'./hyperhdr-renew':()=>({renew:()=>Promise.reject(Error('RENEW_UNAVAILABLE'))}),
     './screen-backend':()=>({inspect:async()=>Object.assign({},report)}),
     './screen-session':{create:()=>({pending:()=>record})},'./screen-store':()=>({})};
   vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../services/com.frxn.mipantalla.lights/screen-control.js'),'utf8'),

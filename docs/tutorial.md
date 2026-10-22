@@ -4,7 +4,7 @@ Guía al **2026-10-21**. Mi pantalla es una app web con servicio local: no cambi
 las interfaces internas de YouTube, Netflix o Ajustes. Se puede usar sin root. **Home nativo,
 encendido automático y captura de otras apps requieren configuración adicional**.
 
-La **0.7.11 está instalada**, con Personalizar a la izquierda y el modo Solo fondo.
+La **0.7.12 está instalada**, con Personalizar a la izquierda y el modo Solo fondo.
 La captura sigue siendo experimental. En los checkpoints 0.7.8/0.7.9, el dueño confirmó
 colores de YouTube y Home sin pantalla negra con el parche nativo verificado localmente.
 Manual por API restauró 6/6; en la última prueba necesitó un segundo intento para dos luces.
@@ -125,12 +125,12 @@ No instalar si falla. Esto no prueba permisos ni comportamiento físico de la TV
 
 ### Paquete público fijado para el piloto
 
-El [release v0.7.11](https://github.com/frxnnk/webos-liquid-glass-launcher/releases/tag/v0.7.11)
-contiene un IPK público limpio: **63 archivos, 1.702.700 bytes**, SHA-256
-`d2fa75d444c3f39d1a88766a170eb482e9f39d42f0e47d6f13ee6f5d45d5f759`.
+El [release v0.7.12](https://github.com/frxnnk/webos-liquid-glass-launcher/releases/tag/v0.7.12)
+contiene un IPK público limpio: **70 archivos, 1.710.178 bytes**, SHA-256
+`ae47b9c7446dfeb39f9efdd129375634acc06860248d2d6a4663948ad9ef8cca`.
 No incluye `weather-config.js`, `lights-config.js` ni `screen-config.json`; difiere del paquete
 privado instalado anteriormente. El asistente lo descarga y verifica sólo si la app está
-ausente. No sobrescribe una 0.7.11 existente; actualizar otra versión está bloqueado hasta
+ausente. No sobrescribe una 0.7.12 existente; actualizar otra versión está bloqueado hasta
 implementar preservación. [Uso y restauración del piloto](local-installer.md).
 
 `dist/` y `artifacts/` están ignorados. Un IPK construido con configuración privada puede

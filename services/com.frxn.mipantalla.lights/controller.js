@@ -115,8 +115,15 @@ module.exports = function createController(transport, options) {
       if (screen) result.mode = 'manual'; return result;
     });
   }
+  var auto = options && options.auto;
   return {
     discover:discover,getState:getState,setState:manualState,
+    autoStatus:function (payload) {
+      return auto ? auto.autoStatus(payload) : Promise.resolve({available:false,enabled:false,state:'off',watching:false,apps:[],reason:'unavailable'});
+    },
+    setAuto:function (payload) {
+      return auto ? auto.setAuto(payload) : Promise.reject(Error('Auto no está disponible en esta TV.'));
+    },
     screenStatus:function (payload) {
       if (screen) return screen.status(payload && payload.ids || []);
       return Promise.resolve({configured:false,available:false,ready:false,active:false,configVerified:false,

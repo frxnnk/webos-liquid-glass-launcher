@@ -77,6 +77,20 @@
     result.ready = raw.ready && verified && (frames || result.captureStartReady) && !result.active && !result.pending;
     return result;
   }
+  // Auto: el interruptor vive en el servicio; el panel solo lo muestra y lo cambia.
+  var AUTO_STATES = ['off', 'starting', 'idle', 'waiting', 'syncing', 'stopping', 'error'];
+  function emptyAuto() { return { available: false, enabled: false, state: 'off', reason: '' }; }
+  function cleanAuto(raw) {
+    if (!raw || typeof raw.available !== 'boolean' || typeof raw.enabled !== 'boolean' || AUTO_STATES.indexOf(raw.state) === -1) return emptyAuto();
+    return { available: raw.available, enabled: raw.enabled, state: raw.state, reason: typeof raw.reason === 'string' ? raw.reason.slice(0, 60) : '' };
+  }
+  function autoDetail(auto) {
+    if (!auto.available) return 'No disponible';
+    if (!auto.enabled) return 'Desactivado';
+    if (auto.state === 'error') return 'Error: ' + (auto.reason || 'sin detalle');
+    if (auto.state === 'syncing') return auto.reason === 'manual-session' ? 'Activado · sesión manual' : 'Activado · sincronizando';
+    return 'Activado · ' + ({ starting: 'iniciando', idle: 'esperando YouTube', waiting: 'preparando', stopping: 'restaurando luces' }[auto.state] || 'esperando YouTube');
+  }
   function screenAllowed(view) {
     return !!(view.caps && view.caps.screenSync && view.screen.ready && view.screen.configVerified && view.screen.hardwareVerified &&
       (view.screen.framesVerified || view.screen.captureStartReady) && !view.screen.pending);
@@ -101,7 +115,7 @@
     var session = 0;
     var modeEpoch = 0;
     var modePending = false;
-    var view = { phase: 'closed', reason: '', caps: null, screen: emptyScreen(), devices: [], selected: readSaved(), mode: null, busy: '', message: '', searched: false };
+    var view = { phase: 'closed', reason: '', caps: null, screen: emptyScreen(), auto: emptyAuto(), devices: [], selected: readSaved(), mode: null, busy: '', message: '', searched: false };
 
     function readSaved() {
       try {
@@ -219,6 +233,15 @@
       });
     }
 
+    function refreshAuto() {
+      return call('autoStatus', undefined, TIMEOUT_MS).then(function (outcome) {
+        if (!outcome) return false;
+        view.auto = outcome.result && !outcome.error ? cleanAuto(outcome.result) : emptyAuto();
+        changed();
+        return view.auto.available;
+      });
+    }
+
     return {
       view: view,
       targets: targets,
@@ -228,6 +251,7 @@
         view.phase = 'checking';
         view.caps = null;
         view.screen = emptyScreen();
+        view.auto = emptyAuto();
         view.mode = null;
         view.devices = []; // el estado de otra apertura ya no vale: solo vuelven las confirmadas
         view.searched = false;
@@ -242,6 +266,7 @@
           view.mode = MODES.some(function (entry) { return entry[0] === caps.mode; }) ? caps.mode : null;
           view.phase = 'ready';
           view.busy = '';
+          if (view.caps.screenSync) refreshAuto();
           var saved = view.selected.slice();
           if (!saved.length) { changed(); return; }
           start('Leyendo el estado de tus lámparas…');
@@ -304,6 +329,21 @@
       level: function (value) { return setState({ brightness: value }, 'cambiar el brillo'); },
       color: function (rgb) { return setState({ rgb: rgb.slice() }, 'cambiar el color'); },
       white: function (kelvin) { return setState({ temperature: kelvin }, 'cambiar el blanco'); },
+      setAuto: function (on) {
+        if (view.phase !== 'ready' || view.busy || typeof on !== 'boolean' || !view.auto.available || !(view.caps && view.caps.screenSync)) return Promise.resolve(false);
+        start(on ? 'Activando Auto…' : 'Desactivando Auto…');
+        return call('setAuto', { enabled: on }, TIMEOUT_MS).then(function (outcome) {
+          if (!outcome) return false;
+          view.busy = '';
+          var ok = !outcome.timeout && !outcome.error;
+          if (ok) view.auto = cleanAuto(outcome.result);
+          ok = ok && view.auto.available && view.auto.enabled === on;
+          view.message = ok ? (on ? 'Auto activado: la captura arranca sola al abrir YouTube y las luces vuelven al salir.' : 'Auto desactivado.') :
+            outcome.timeout ? 'Sin respuesta a tiempo: Auto sin confirmar.' : 'No se pudo cambiar Auto' + (outcome.error ? ': ' + outcome.error : '') + '.';
+          changed();
+          return ok;
+        });
+      },
       screenStatus: function () {
         if (view.phase !== 'ready' || view.busy) return Promise.resolve(false);
         return reviewScreen(modeEpoch, false);
@@ -437,6 +477,15 @@
       node.appendChild(detail);
       chips[chips.length - 1].detail = detail;
     });
+    var autoNode = chip(row, '', 'autoswitch', 'auto', function () { controller.setAuto(!controller.view.auto.enabled); });
+    autoNode.className += ' lights-mode lights-auto';
+    autoNode.setAttribute('aria-label', 'Auto. Pantalla completa solo con YouTube');
+    autoNode.appendChild(element('span', 'lights-auto-switch'));
+    autoNode.appendChild(element('span', 'lights-mode-title', 'Auto'));
+    autoNode.appendChild(element('span', 'lights-mode-description', 'Solo con YouTube'));
+    var autoDetailNode = element('span', 'lights-mode-state');
+    autoNode.appendChild(autoDetailNode);
+    chips[chips.length - 1].detail = autoDetailNode;
     var palette = element('div', 'lights-palette');
     controls.appendChild(palette);
     row = group('Color del ambiente', 'colors', palette);
@@ -539,6 +588,12 @@
       search.disabled = !ready || view.mode === 'screen';
       review.disabled = !ready || !!view.busy;
       chips.forEach(function (item) {
+        if (item.kind === 'autoswitch') {
+          item.node.disabled = !(ready && !view.busy && view.auto.available && caps.screenSync);
+          item.node.setAttribute('aria-pressed', view.auto.enabled ? 'true' : 'false');
+          item.detail.textContent = autoDetail(view.auto);
+          return;
+        }
         var restoring = item.kind === 'mode' && item.value === 'manual' && view.mode === 'screen';
         var allowed = restoring ? ready && !view.busy : act && (item.kind !== 'mode' || item.value === 'manual' || (item.value === 'ambient' ? caps.wallpaperSync : screenAllowed(view)));
         item.node.disabled = !allowed;

@@ -12,6 +12,10 @@ http.createServer((request, response) => {
   if (!file.startsWith(root + path.sep)) { response.writeHead(403).end(); return; }
   fs.readFile(file, (error, content) => {
     if (error) { response.writeHead(404).end(); return; }
+    // ?demo=lights suma un servicio de luces simulado (solo vista previa local; no va en el IPK).
+    if (path.basename(file) === 'index.html' && new URL(request.url, 'http://localhost').searchParams.get('demo') === 'lights') {
+      content = Buffer.from(content.toString('utf8').replace('<script src="app.js"></script>', '<script src="scripts/preview-lights-demo.js"></script><script src="app.js"></script>'));
+    }
     response.writeHead(200, { 'Content-Type': types[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-store' });
     response.end(content);
   });

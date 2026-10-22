@@ -234,3 +234,29 @@ test('a hung state query expires at the hard deadline and a late reply cannot re
   assert.equal(t.calls.length,before);
   assert.deepEqual(t.calls.filter(q=>q.command==='componentstate').map(q=>q.componentstate.state),[true,false]);
 });
+
+test('an auth-required connect renews once, retries with the new token and reports a normal status',async()=>{
+  let tokens=[],renewals=0;
+  const t=setup((data,config,rpc)=>{
+    const ok=rpc.connect;
+    rpc.connect=async()=>{tokens.push(config.token);if(config.token==='stale-token-not-a-secret')throw Object.assign(Error('auth'),{code:'HYPERHDR_AUTH_REQUIRED'});return ok();};
+    config.token='stale-token-not-a-secret';
+  },{renew:async()=>{renewals++;return 'fresh-token-not-a-secret';}});
+  const status=await t.backend.inspect(ids);
+  assert.equal(renewals,1);assert.deepEqual(tokens,['stale-token-not-a-secret','fresh-token-not-a-secret']);
+  assert.equal(status.configVerified,true);assert.equal(status.outputEnabled,false);
+  assert.notEqual(status.reason,'auth-required');
+});
+test('when renewal fails the original auth-required result is kept and nothing is retried',async()=>{
+  let connects=0,renewals=0;
+  const t=setup((data,config,rpc)=>{rpc.connect=async()=>{connects++;throw Object.assign(Error('auth'),{code:'HYPERHDR_AUTH_REQUIRED'});};},
+    {renew:async()=>{renewals++;throw Object.assign(Error('cooldown'),{code:'RENEW_COOLDOWN'});}});
+  const status=await t.backend.inspect(ids);
+  assert.equal(status.reason,'auth-required');assert.equal(connects,1);assert.equal(renewals,1);
+});
+test('other connection errors never trigger a renewal',async()=>{
+  let renewals=0;
+  const t=setup((data,config,rpc)=>{rpc.connect=async()=>{throw Object.assign(Error('down'),{code:'HYPERHDR_CONNECTION'});};},
+    {renew:async()=>{renewals++;return 'x';}});
+  await t.backend.inspect(ids);assert.equal(renewals,0);
+});

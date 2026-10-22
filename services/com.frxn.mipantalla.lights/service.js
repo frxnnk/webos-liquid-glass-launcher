@@ -27,6 +27,7 @@ var controller = require('./controller')(require('./transport')(),{
     options = options || {}; options.capture = capture;
     return require('./screen-control')(lamps,options);
   },
-  screenProbe:require('./piccap-probe')({call:call}).read
+  screenProbe:require('./piccap-probe')({call:call}).read,
+  auto:require('./auto-control')({config:require('./auto-config')()})
 });
 require('./api')(service,controller);

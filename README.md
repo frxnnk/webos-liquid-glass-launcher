@@ -1,9 +1,13 @@
 # Mi pantalla
 
-> **0.7.11 instalada** (22 de octubre de 2026): al volver a Manual, las lámparas que no confirman la
-> restauración se reintentan una vez tras 1,5 s antes de dejarlas pendientes, y los filos del vidrio
-> son algo menos brillantes. No se validó con la TV física ni el dueño volvió a probar la captura;
-> HyperHDR pide renovar su autorización (ver [Captura](docs/screen-sync.md#renovar-la-autorización-de-hyperhdr)).
+> **0.7.12 instalada** (22 de octubre de 2026): la captura renueva sola su autorización con HyperHDR
+> (verificado en la TV: `screenStatus` pasó de `auth-required` a listo, sin iniciar captura) y hay un
+> modo **Auto** opcional, apagado por defecto: inicia Pantalla completa al abrir YouTube y devuelve las
+> luces al salir o al apagar la TV. Auto **no está validado con la TV física ni con YouTube**.
+> [Detalles y qué probar](docs/screen-sync.md#modo-auto-y-renovación-automática-0712).
+>
+> **0.7.11:** al volver a Manual, las lámparas sin confirmar se reintentan una vez tras 1,5 s (sin
+> prueba física); filos del vidrio algo menos brillantes.
 >
 > **0.7.10:** Personalizar queda arriba a la izquierda. **Solo fondo** muestra la
 > galería a pantalla completa; OK, Atrás o una flecha recuperan la interfaz.
@@ -12,13 +16,13 @@
 > Home con captura activa llegó al launcher en 0.7.9 y el dueño confirmó imagen normal.
 > STOP ya no depende de respuestas WiZ mientras HyperHDR escribe. La última restauración
 > necesitó dos intentos de Manual y terminó con 6/6 estados exactos, verificados por UDP.
-> Captura apagada y sin recuperación pendiente al cerrar. Suite 0.7.11: **651/651**.
+> Captura apagada y sin recuperación pendiente al cerrar. Suite 0.7.12: **695/695**.
 > [Captura y límites](docs/screen-sync.md) · [Incidente previo](docs/incidents/2026-10-21-black-screen.md).
 
 Un inicio personalizado para LG webOS: tus apps, fotos y el control del living en una pantalla
 Liquid Glass que se maneja con el control remoto.
 
-**0.7.11 instalada.** Las apps del inicio pueden elegirse y ordenarse desde Personalizar.
+**0.7.12 instalada.** Las apps del inicio pueden elegirse y ordenarse desde Personalizar.
 Los accesos que exceden el ancho se recorren con las flechas; HDMI queda en su sección.
 Conserva Homebrew Channel y el auditor de privacidad y recursos de sólo lectura.
 
