@@ -1,6 +1,12 @@
 # Mi pantalla
 
-> **0.7.13 instalada** (22 de octubre de 2026): **Personalizar ofrece más apps de la TV**. LG marca como
+> **0.7.14 instalada** (22 de octubre de 2026): **Personalizar ahora lista todas las apps de la TV, con su ícono**.
+> La TV le niega `listApps` a la app (y también al servicio con su identidad), así que Personalizar solo
+> mostraba los accesos propios; ahora lo pide el servicio de luces con un `luna-send` de root, de solo lectura, y
+> copia los íconos a la carpeta de la app (la página no puede leer las de otras apps). Verificado en la TV por
+> el inspector: 38 apps disponibles y 38 íconos cargados. El interruptor ya no dice «En inicio»/«Agregar».
+>
+> **0.7.13:** Personalizar ofrece más apps de la TV. LG marca como
 > `visible:false` 97 de las 121 apps de esta unidad; casi todas son internas, pero doce sirven desde el
 > inicio (Configuración, TV en vivo, Guía de TV, Grabaciones, Notificaciones, Compartir pantalla, AirPlay,
 > Ayuda rápida, Guía del usuario, Home de LG, HDMI 2 y HDMI 3) y ahora aparecen «fuera del inicio» para
@@ -22,13 +28,13 @@
 > Home con captura activa llegó al launcher en 0.7.9 y el dueño confirmó imagen normal.
 > STOP ya no depende de respuestas WiZ mientras HyperHDR escribe. La última restauración
 > necesitó dos intentos de Manual y terminó con 6/6 estados exactos, verificados por UDP.
-> Captura apagada y sin recuperación pendiente al cerrar. Suite 0.7.13: **702/702**.
+> Captura apagada y sin recuperación pendiente al cerrar. Suite 0.7.14: **714/714**.
 > [Captura y límites](docs/screen-sync.md) · [Incidente previo](docs/incidents/2026-10-21-black-screen.md).
 
 Un inicio personalizado para LG webOS: tus apps, fotos y el control del living en una pantalla
 Liquid Glass que se maneja con el control remoto.
 
-**0.7.13 instalada.** Las apps del inicio pueden elegirse y ordenarse desde Personalizar.
+**0.7.14 instalada.** Las apps del inicio pueden elegirse y ordenarse desde Personalizar.
 Los accesos que exceden el ancho se recorren con las flechas; HDMI queda en su sección.
 Conserva Homebrew Channel y el auditor de privacidad y recursos de sólo lectura.
 

@@ -2,7 +2,7 @@
 
 Estado al **2026-10-21**. El programa ya está implementado en `installer/` y se inicia con
 `npm run setup`. Sirve una interfaz local para Brave; no instala un agente de instalación
-permanente en la TV. **Mi pantalla 0.7.13 ya está instalada; el botón Pantalla completa todavía
+permanente en la TV. **Mi pantalla 0.7.14 ya está instalada; el botón Pantalla completa todavía
 requiere prueba física.** En el checkpoint 0.7.6 desde el asistente de PC, el dueño confirmó
 colores de video en seis WiZ y se verificó su restauración 6/6, incluidas dos escenas.
 Este trabajo no es un rediseño nuevo del Home.
@@ -67,7 +67,7 @@ No existen comandos CLI públicos `setup --plan`, `--apply` o `--restore`.
 
 | Acción elegida | Alcance y límite |
 | --- | --- |
-| Instalar Mi pantalla | Si la app está ausente, descarga el IPK público fijo y comprueba SHA-256 antes de instalar. Con 0.7.13 ya instalada omite ese paso. Otra versión queda bloqueada hasta implementar preservación de actualizaciones. |
+| Instalar Mi pantalla | Si la app está ausente, descarga el IPK público fijo y comprueba SHA-256 antes de instalar. Con 0.7.14 ya instalada omite ese paso. Otra versión queda bloqueada hasta implementar preservación de actualizaciones. |
 | Usar Mi pantalla como inicio | Cambia sólo `home` dentro del mapa actual de defaults; prepara Home nativo, arranque y guardia mediante hooks propios 59/60 de HBC. Conserva baselines históricos. |
 | Reducir publicidad de LG | Siete preferencias conocidas y los dos permisos RDX `analyticsLog`/`crashLog`; respaldo, lectura posterior y hook propio 61. No apaga todo el tráfico de la TV. |
 | Apps LG opcionales | Sólo LG Streaming Week (`webos.day`), LG Sports Playbook (`epoxyaisports`) y LG Channels (`lgchannels.home`), marcadas individualmente. Exige no sistema y removible; no permite IDs arbitrarios. |
@@ -128,15 +128,15 @@ hasta 25 s y conservan la recuperación pendiente si falta confirmación.
 
 ## Paquete público fijado
 
-[Release v0.7.13](https://github.com/frxnnk/webos-liquid-glass-launcher/releases/tag/v0.7.13):
-`com.frxn.mipantalla_0.7.13_all.ipk`, **70 archivos, 1.711.176 bytes**.
+[Release v0.7.14](https://github.com/frxnnk/webos-liquid-glass-launcher/releases/tag/v0.7.14):
+`com.frxn.mipantalla_0.7.14_all.ipk`, **82 archivos, 1.714.784 bytes**.
 
 ```text
-SHA-256: f591aa621dcfe2fb48444d27da8e0580ab16fc02b5597b686562804d39c2458b
+SHA-256: 12ccbf8b9e45e753c55ded8ee9a18415a05c64bb9e989a7801d811122d0138f8
 ```
 
 No contiene `weather-config.js`, `lights-config.js` ni `screen-config.json`. Es distinto del IPK
-privado instalado en la TV: no sobrescribir una instalación 0.7.13 existente
+privado instalado en la TV: no sobrescribir una instalación 0.7.14 existente
 con este paquete para «igualar hashes». El piloto la omite; la actualización con preservación
 de configuración privada sigue pendiente. El hash se verifica también antes de la instalación
 remota; una descarga fallida o distinta no se instala.

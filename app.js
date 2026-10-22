@@ -214,13 +214,24 @@
   function renderManager(focusKey, focusAction) {
     manager.render(items, {focusKey:focusKey, focusAction:focusAction, loading:catalogLoading, error:catalogError});
   }
+  // La TV deniega listApps a la app ("Denied method call"): si pasa, lo pide el servicio de luces, que corre como root.
+  function fetchApps() {
+    return bridge.listApps().catch(function (error) {
+      var client = window.LAUNCHER_LIGHTS_CLIENT;
+      if (!client || typeof client.listApps !== 'function') throw error;
+      return client.listApps().then(function (result) {
+        if (!result || !Array.isArray(result.apps)) throw error;
+        return result.apps;
+      });
+    });
+  }
   function refreshCatalog() {
     if (catalogLoading) return;
     // LAUNCHER_DEMO_APPS solo lo define la demo local (scripts/preview-lights-demo.js): un catálogo simulado.
     if (!onTV && !window.LAUNCHER_DEMO_APPS) { catalogError = 'Las apps instaladas se consultan desde la TV.'; renderManager(); return; }
     var epoch = ++catalogEpoch;
     catalogLoading = true; catalogError = ''; renderManager();
-    bridge.listApps().then(function (apps) {
+    fetchApps().then(function (apps) {
       if (!editing || epoch !== catalogEpoch) return;
       items = catalog.merge(items, apps);
       var ids = Object.create(null);

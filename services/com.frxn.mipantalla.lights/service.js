@@ -28,6 +28,7 @@ var controller = require('./controller')(require('./transport')(),{
     return require('./screen-control')(lamps,options);
   },
   screenProbe:require('./piccap-probe')({call:call}).read,
-  auto:require('./auto-control')({config:require('./auto-config')()})
+  auto:require('./auto-control')({config:require('./auto-config')()}),
+  apps:require('./app-list')()
 });
 require('./api')(service,controller);

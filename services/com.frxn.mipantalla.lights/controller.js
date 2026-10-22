@@ -115,9 +115,12 @@ module.exports = function createController(transport, options) {
       if (screen) result.mode = 'manual'; return result;
     });
   }
-  var auto = options && options.auto;
+  var auto = options && options.auto, apps = options && options.apps;
   return {
     discover:discover,getState:getState,setState:manualState,
+    listApps:function () {
+      return apps ? apps.list() : Promise.reject(Error('El listado de apps no está disponible.'));
+    },
     autoStatus:function (payload) {
       return auto ? auto.autoStatus(payload) : Promise.resolve({available:false,enabled:false,state:'off',watching:false,apps:[],reason:'unavailable'});
     },

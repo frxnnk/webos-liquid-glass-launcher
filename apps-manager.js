@@ -96,7 +96,6 @@
       var track = element('span', 'switch');
       track.appendChild(element('span', 'switch-knob'));
       toggle.appendChild(track);
-      toggle.appendChild(element('span', 'switch-label', item.visible ? 'En inicio' : 'Agregar'));
       row.appendChild(toggle);
 
       var earlier = actionButton(item, 'earlier', 'Mover ' + item.title + ' antes', function () {

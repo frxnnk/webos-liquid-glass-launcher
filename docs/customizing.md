@@ -78,3 +78,18 @@ No están a propósito: **Software Update** (un firmware nuevo puede quitar el r
 apps de fábrica. HDMI 4 tampoco: muchos modelos tienen tres puertos y HDMI 1 ya es un acceso propio.
 Un acceso a una entrada sin señal solo muestra pantalla negra. Sin TV, `?demo=lights&apps=tv` en la vista
 previa local simula este catálogo (pulsá «Actualizar apps»).
+
+### Por qué Personalizar no veía las apps instaladas, y los íconos
+
+Hasta 0.7.13, **Actualizar apps** fallaba en la TV con «No se pudo actualizar»: la TV responde
+`Denied method call "listApps"` a la app, y también al servicio de luces con su propia identidad. Solo
+contesta a un `luna-send` de root (el que ya usan el instalador y el vigilante de Auto). Desde 0.7.14 el servicio
+de luces ejecuta ese comando, de solo lectura, y devuelve únicamente id, título, ícono y carpeta (hasta 512).
+Por eso **esta lista requiere root**, como Home y Auto; sin root se ve solo el catálogo propio.
+
+La página tampoco puede leer los íconos de otras apps (`/usr/palm/…`, `/media/cryptofs/…`): 15 de 38 no cargaban.
+El servicio copia el ícono de cada app visible a `assets/app-icons/` dentro de Mi pantalla (solo imágenes ≤ 256 KB bajo
+las tres carpetas de aplicaciones, nunca enlaces ni rutas con `..`) y borra las copias de apps que ya no están. Una
+reinstalación del paquete vacía esa carpeta; se rellena al abrir Personalizar. Las apps de sistema usan íconos propios
+(`assets/logos/system-*.svg`). Comprobado en la TV por el inspector: 38 filas, 38 íconos, sin etiqueta de texto en los
+interruptores; lanzar Guía de TV (`com.webos.app.livemenu`) desde la app funciona aunque LG la marque `visible:false`.

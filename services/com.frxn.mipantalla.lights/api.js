@@ -2,7 +2,7 @@
 // message.sender is native LS2 metadata, not payload.sender. The wrapper strips WAM's PID suffix.
 // https://webostv.developer.lge.com/develop/references/webos-service-reference#messagesender
 module.exports = function register(service, controller) {
-  ['capabilities','discover','getState','setState','setMode','screenStatus','autoStatus','setAuto'].forEach(function (method) {
+  ['capabilities','discover','getState','setState','setMode','screenStatus','autoStatus','setAuto','listApps'].forEach(function (method) {
     service.register(method,function (message) {
       function reply(payload) { try { message.respond(payload); } catch (ignored) {} }
       if (message.sender !== 'com.frxn.mipantalla') {

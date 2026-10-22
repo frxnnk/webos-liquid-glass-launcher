@@ -7,18 +7,18 @@
   // Sin Software Update ni Installation: actualizar el firmware quitaría el root. HDMI 4 queda fuera
   // porque muchos modelos tienen tres puertos; HDMI 1 ya es un acceso propio.
   var SYSTEM = {
-    'com.palm.app.settings': { title: 'Configuración' },
-    'com.webos.app.livetv': { title: 'TV en vivo' },
-    'com.webos.app.livemenu': { title: 'Guía de TV' },
-    'com.webos.app.recordings': { title: 'Grabaciones' },
-    'com.webos.app.notificationcenter': { title: 'Notificaciones' },
-    'com.webos.app.miracast': { title: 'Compartir pantalla' },
-    'airplay': { title: 'AirPlay' },
-    'com.webos.app.self-diagnosis': { title: 'Ayuda rápida' },
-    'com.webos.app.tvuserguide': { title: 'Guía del usuario' },
-    'com.webos.app.home': { title: 'Home de LG' },
-    'com.webos.app.hdmi2': { title: 'HDMI 2', kind: 'input' },
-    'com.webos.app.hdmi3': { title: 'HDMI 3', kind: 'input' }
+    'com.palm.app.settings': { title: 'Configuración', logo: 'assets/logos/system-settings.svg' },
+    'com.webos.app.livetv': { title: 'TV en vivo', logo: 'assets/logos/system-livetv.svg' },
+    'com.webos.app.livemenu': { title: 'Guía de TV', logo: 'assets/logos/system-guide.svg' },
+    'com.webos.app.recordings': { title: 'Grabaciones', logo: 'assets/logos/system-recordings.svg' },
+    'com.webos.app.notificationcenter': { title: 'Notificaciones', logo: 'assets/logos/system-notifications.svg' },
+    'com.webos.app.miracast': { title: 'Compartir pantalla', logo: 'assets/logos/system-cast.svg' },
+    'airplay': { title: 'AirPlay', logo: 'assets/logos/system-airplay.svg' },
+    'com.webos.app.self-diagnosis': { title: 'Ayuda rápida', logo: 'assets/logos/system-help.svg' },
+    'com.webos.app.tvuserguide': { title: 'Guía del usuario', logo: 'assets/logos/system-manual.svg' },
+    'com.webos.app.home': { title: 'Home de LG', logo: 'assets/logos/system-home.svg' },
+    'com.webos.app.hdmi2': { title: 'HDMI 2', kind: 'input', logo: 'assets/logos/hdmi.svg' },
+    'com.webos.app.hdmi3': { title: 'HDMI 3', kind: 'input', logo: 'assets/logos/hdmi.svg' }
   };
   function systemEntry(id) { return typeof id === 'string' && Object.prototype.hasOwnProperty.call(SYSTEM, id) ? SYSTEM[id] : null; }
 
@@ -30,8 +30,11 @@
     if (typeof value !== 'string') return '';
     return value.replace(/<[^>]*>/g, '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160);
   }
+  // Íconos que el servicio de luces (root) copió dentro de esta app: la página no puede leer otras carpetas.
+  var LOCAL_ICON = /^assets\/app-icons\/[a-z0-9][a-z0-9._-]{0,150}\.(?:png|jpe?g|svg|webp)$/i;
   function icon(value, folder) {
     if (typeof value !== 'string') return FALLBACK;
+    if (LOCAL_ICON.test(value)) return value;
     var path = value;
     if (path.indexOf('file:///') === 0) path = path.slice(7);
     else if (path.charAt(0) !== '/' && typeof folder === 'string') path = folder.replace(/\/$/, '') + '/' + path;
@@ -51,7 +54,8 @@
     if (!stored && (entry.noWindow === true || (entry.visible === false && !system))) return null;
     return {
       key: 'app-' + id, appId: id, title: title,
-      logo: icon(stored ? entry.logo : entry.icon, stored ? null : entry.folderPath),
+      // Las apps de sistema usan un ícono propio (siempre carga); el resto, el que declara la TV.
+      logo: system && system.logo ? system.logo : icon(stored ? entry.logo : (LOCAL_ICON.test(String(entry.logo)) ? entry.logo : entry.icon), stored ? null : entry.folderPath),
       color: '#a8b5ce', tagline: system ? 'Sistema de LG' : 'Aplicación instalada', kind: system && system.kind || 'app',
       visible: stored ? entry.visible !== false : false, catalogApp: true
     };

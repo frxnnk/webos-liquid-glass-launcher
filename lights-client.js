@@ -128,6 +128,11 @@
         return request('autoStatus',{});
       },
       setAuto:function (payload) { return request('setAuto',payload); },
+      // La TV le niega listApps a la app; el servicio (root) lo hace por ella.
+      listApps:function () {
+        if (!onTV) return Promise.resolve({apps:[]});
+        return request('listApps',{});
+      },
       setState:function (payload) {
         stopAmbient(); return request('setState',payload).then(function (result) {
           if (result.mode === 'manual') mode = 'manual'; return result;
