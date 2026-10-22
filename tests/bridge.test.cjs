@@ -117,3 +117,40 @@ test('a YouTube launch that times out is cancelled once and not retried', async 
   assert.equal(count, 1);
   assert.equal(cancelled, 1);
 });
+
+test('installed app discovery returns only a confirmed array and never contacts the TV in preview', async () => {
+  let calls = 0;
+  const sdk = {service:{request(uri,options) {
+    calls += 1;
+    assert.equal(uri,'luna://com.webos.applicationManager');
+    assert.equal(options.method,'listApps');
+    assert.deepEqual(JSON.parse(JSON.stringify(options.parameters)),{});
+    options.onSuccess({returnValue:true,apps:[{id:'netflix',title:'Netflix'}]});
+    return {};
+  }}};
+  assert.deepEqual(JSON.parse(JSON.stringify(await loadBridge(sdk,false).listApps())),[]);
+  assert.equal(calls,0);
+  assert.equal((await loadBridge(sdk,true).listApps())[0].id,'netflix');
+  assert.equal(calls,1);
+});
+
+test('empty app inventory is distinct from malformed responses and service denial', async () => {
+  const make = response => loadBridge({service:{request(uri,options) {options.onSuccess(response);return {};}}},true);
+  assert.deepEqual(JSON.parse(JSON.stringify(await make({returnValue:true,apps:[]}).listApps())),[]);
+  for (const response of [null,{}, {returnValue:true}, {returnValue:true,apps:{}}, {returnValue:false,errorText:'Denied'}]) {
+    await assert.rejects(make(response).listApps(), /catálogo|Denied|respuesta/i);
+  }
+});
+
+test('inventory timeout cancels once and a late response cannot replace the failure', async () => {
+  let options, cancellations = 0;
+  const bridge = loadBridge({service:{request(uri,args) {options=args;return {cancel(){cancellations += 1;}};}}},true,5);
+  await assert.rejects(bridge.listApps(),/confirmar/i);
+  options.onSuccess({returnValue:true,apps:[]});
+  assert.equal(cancellations,1);
+});
+
+test('inventory timeout still rejects when the SDK cancellation throws', async () => {
+  const bridge = loadBridge({service:{request() {return {cancel(){throw new Error('SDK cancel failed');}};}}},true,5);
+  await assert.rejects(bridge.listApps(),/confirmar/i);
+});

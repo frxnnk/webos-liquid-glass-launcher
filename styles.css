@@ -255,6 +255,10 @@ button:disabled { cursor: default; }
   background: linear-gradient(180deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, .32) 30%, rgba(255, 255, 255, .32) 70%, rgba(255, 255, 255, 0));
 }
 .tiles-row { display: flex; flex-wrap: nowrap; }
+/* El foco nativo desplaza la fila sólo cuando el próximo acceso queda fuera de vista. */
+#apps-grid { overflow-x: auto; overflow-y: hidden; padding: 1.4rem .45rem 2rem; margin: -1.4rem -.45rem -2rem; }
+#apps-grid::-webkit-scrollbar { display: none; }
+.dock .tile { flex-shrink: 0; }
 .empty-state {
   display: flex;
   align-items: center;

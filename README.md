@@ -1,21 +1,20 @@
 # Mi pantalla
 
-> **0.7.8 experimental instalada:** incluye un parche del capturador y parada completa desde
-> Manual. La carrera original se reprodujo fuera de la TV; el parche pasa las pruebas locales.
-> En la TV se comprobó la versión nativa nueva y el estado «lista para iniciar», con captura
-> apagada, salida LED apagada y sin recuperación pendiente. Manual por API ya detuvo PicCap
-> y restauró 6/6 estados exactos; Home con captura apagada devolvió Mi pantalla como foreground.
-> **Colores de video y Home con captura activa siguen pendientes de confirmación física.**
-> No se presenta como cura acreditada del bloqueo del kernel. Suite local: 590/590.
-> [Cambios, reproducción y límites](docs/capture-repair.md) ·
-> [Incidente de 0.7.7](docs/incidents/2026-10-21-black-screen.md).
+> **0.7.9 instalada:** Personalizar incorpora el catálogo de apps instaladas con acceso propio,
+> selección y orden guardados. [Cómo usarlo](docs/customizing.md).
+> La captura sigue siendo experimental: el dueño confirmó colores de YouTube con 0.7.8;
+> Home con captura activa llegó al launcher en 0.7.9 y el dueño confirmó imagen normal.
+> STOP ya no depende de respuestas WiZ mientras HyperHDR escribe. La última restauración
+> necesitó dos intentos de Manual y terminó con 6/6 estados exactos, verificados por UDP.
+> Captura apagada y sin recuperación pendiente al cerrar. Suite: **631/631**.
+> [Captura y límites](docs/screen-sync.md) · [Incidente previo](docs/incidents/2026-10-21-black-screen.md).
 
 Un inicio personalizado para LG webOS: tus apps, fotos y el control del living en una pantalla
 Liquid Glass que se maneja con el control remoto.
 
-**0.7.8 experimental instalada, con la validación pendiente indicada arriba.** Conserva un acceso a Homebrew Channel y un auditor
-de privacidad y recursos de sólo lectura. Los ocho accesos entran a 1080p y 720p. El acceso
-abrió Homebrew Channel en la TV; no instala paquetes ni obtiene root por sí mismo.
+**0.7.9 instalada.** Las apps del inicio pueden elegirse y ordenarse desde Personalizar.
+Los accesos que exceden el ancho se recorren con las flechas; HDMI queda en su sección.
+Conserva Homebrew Channel y el auditor de privacidad y recursos de sólo lectura.
 
 En la **0.7.6**, desde el asistente de PC, el dueño confirmó
 que las seis lámparas siguen los colores del video de YouTube. **Desactivar restauró las seis**,
@@ -42,7 +41,9 @@ La causa y una corrección permanente siguen pendientes.
 
 ## Qué ofrece hoy
 
-- Íconos sin títulos, ordenables y ocultables: YouTube, Spotify, Nuvio, Netflix, Disney+,
+- Catálogo de apps con acceso propio instalado en la TV, con selección y orden guardados.
+  [Personalizar](docs/customizing.md) conserva las preferencias anteriores y funciona con el
+  último catálogo guardado si falla la consulta. Los accesos iniciales son YouTube, Spotify, Nuvio, Netflix, Disney+,
   Transitions/Bedrock, Homebrew Channel y HDMI 1. Los IDs se verifican por modelo: un acceso
   configurado no significa que la app esté instalada. Nuvio no apareció en el último inventario.
 - Ilustración local desde el primer pintado, foto con fundido y una selección diaria de

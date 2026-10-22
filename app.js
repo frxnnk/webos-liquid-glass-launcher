@@ -4,8 +4,9 @@
   var onTV = !!window.PalmSystem;
   document.documentElement.classList.toggle('is-tv', onTV);
   var bridge = window.createTVBridge(window.webOS, onTV);
+  var catalog = window.LauncherCatalog;
   var storageKey = 'mi-pantalla-layout-v1';
-  var items = defaults.map(function (item) { return Object.assign({}, item, { visible: true }); });
+  var items = catalog.restore(defaults, null);
   var installed = {};
   var editing = false;
   var busy = false;
@@ -23,6 +24,10 @@
   var backgrounds = null;
   var transitions = window.LauncherTransitions ? window.LauncherTransitions.mount(window.LAUNCHER_TRANSITIONS) : null;
   var sourcesOpen = false;
+  var catalogLoading = false;
+  var catalogError = '';
+  var catalogEpoch = 0;
+  var dockScroll = window.LauncherDockScroll.mount(document.getElementById('apps-grid'));
 
   // Mensajes breves: el inicio queda limpio salvo errores o acciones en curso.
   function say(message, lingerMs) {
@@ -32,31 +37,12 @@
   }
   function save() {
     try {
-      localStorage.setItem(storageKey, JSON.stringify(items.map(function (item) {
-        return { key: item.key, visible: item.visible };
-      })));
+      localStorage.setItem(storageKey, JSON.stringify(catalog.serialize(items)));
     } catch (error) { say('La selección funciona, pero no se pudo guardar en este dispositivo.'); }
   }
   try {
     var stored = JSON.parse(localStorage.getItem(storageKey) || 'null');
-    if (Array.isArray(stored)) {
-      var ordered = [];
-      stored.forEach(function (entry) {
-        var item = items.filter(function (candidate) { return candidate.key === entry.key; })[0];
-        if (item && !ordered.some(function (candidate) { return candidate.key === item.key; })) {
-          item.visible = entry.visible !== false;
-          ordered.push(item);
-        }
-      });
-      // Accesos nuevos (Transitions en 0.4): visibles, después del último de su tipo.
-      items.forEach(function (item) {
-        if (ordered.indexOf(item) !== -1) return;
-        var at = -1;
-        ordered.forEach(function (candidate, index) { if (candidate.kind === item.kind) at = index; });
-        ordered.splice(at + 1, 0, item);
-      });
-      items = ordered;
-    }
+    items = catalog.restore(defaults, stored);
   } catch (error) { say('Se cargó tu selección inicial porque los ajustes guardados no son legibles.'); }
 
   function element(tag, className, text) {
@@ -70,6 +56,12 @@
     image.src = item.logo;
     image.alt = '';
     image.setAttribute('draggable', 'false');
+    var failed = false;
+    image.addEventListener('error', function () {
+      if (failed) { image.hidden = true; return; }
+      failed = true;
+      image.src = 'assets/logos/app.svg';
+    });
     return image;
   }
   function itemByKey(key) {
@@ -151,6 +143,7 @@
     current = target;
     current.classList.add('is-current');
     if (editing) return;
+    dockScroll.reveal(target);
     var item = target.dataset && target.dataset.id ? itemByKey(target.dataset.id) : null;
     explainFocus(item);
     setAura(item ? item.color : '#5d7dff');
@@ -191,7 +184,7 @@
     document.getElementById('empty-state').hidden = grids.app.children.length > 0;
     document.querySelector('.dock-inputs').hidden = !hasInputs;
     document.querySelector('.dock-divider').hidden = !hasInputs;
-    if (editing) renderManager();
+    dockScroll.refresh();
     if (backgrounds) backgrounds.layout(); // el dock cambió de tamaño: realinear el vidrio
   }
 
@@ -204,52 +197,42 @@
   }
 
   // ---------- Personalizar ----------
-  function managerButton(className, label, action) {
-    var button = element('button', className);
-    button.type = 'button';
-    button.setAttribute('aria-label', label);
-    button.addEventListener('click', action);
-    return button;
+  var manager = window.LauncherAppsManager.mount({
+    list: document.getElementById('manage-list'),
+    onToggle: function (key) {
+      var item = itemByKey(key);
+      if (!item) return;
+      item.visible = !item.visible;
+      save(); render(); renderManager(key, 'toggle');
+    },
+    onMove: function (key, direction) {
+      items = catalog.move(items, key, direction);
+      save(); render(); renderManager(key, direction < 0 ? 'earlier' : 'later');
+    },
+    onRefresh: refreshCatalog
+  });
+  function renderManager(focusKey, focusAction) {
+    manager.render(items, {focusKey:focusKey, focusAction:focusAction, loading:catalogLoading, error:catalogError});
   }
-
-  function renderManager(focusKey) {
-    var list = document.getElementById('manage-list');
-    list.textContent = '';
-    items.forEach(function (item, index) {
-      var row = element('div', 'manage-row' + (item.visible ? '' : ' is-hidden'));
-      var badge = element('span', 'manage-logo');
-      badge.style.setProperty('--tile-color', item.color);
-      badge.appendChild(logo(item, ''));
-      row.appendChild(badge);
-      var name = element('span', 'manage-name', item.title);
-      name.appendChild(element('small', '', (item.kind === 'input' ? 'Entrada' : 'Aplicación') + ' · ' + (item.visible ? 'En el inicio' : 'Oculta')));
-      row.appendChild(name);
-
-      var toggle = managerButton('switch-button', (item.visible ? 'Ocultar ' : 'Mostrar ') + item.title, function () {
-        item.visible = !item.visible;
-        save(); render(); renderManager(item.key);
-      });
-      toggle.setAttribute('role', 'switch');
-      toggle.setAttribute('aria-checked', item.visible ? 'true' : 'false');
-      toggle.dataset.toggle = item.key;
-      var track = element('span', 'switch');
-      track.appendChild(element('span', 'switch-knob'));
-      toggle.appendChild(track);
-      toggle.appendChild(element('span', 'switch-label', item.visible ? 'Visible' : 'Oculta'));
-      row.appendChild(toggle);
-
-      var earlier = items.slice(0, index).filter(function (candidate) { return candidate.kind === item.kind; }).pop();
-      var move = managerButton('move-button', 'Mover ' + item.title + ' antes', function () {
-        var other = items.indexOf(earlier);
-        items[other] = item; items[index] = earlier;
-        save(); render(); renderManager(item.key);
-      });
-      move.appendChild(element('span', 'chevron'));
-      move.disabled = !earlier;
-      row.appendChild(move);
-      list.appendChild(row);
+  function refreshCatalog() {
+    if (catalogLoading) return;
+    if (!onTV) { catalogError = 'Las apps instaladas se consultan desde la TV.'; renderManager(); return; }
+    var epoch = ++catalogEpoch;
+    catalogLoading = true; catalogError = ''; renderManager();
+    bridge.listApps().then(function (apps) {
+      if (!editing || epoch !== catalogEpoch) return;
+      items = catalog.merge(items, apps);
+      var ids = Object.create(null);
+      apps.forEach(function (app) { if (app && typeof app.id === 'string') ids[app.id] = true; });
+      items.forEach(function (item) { installed[item.key] = !!ids[item.appId]; });
+      catalogLoading = false;
+      save(); render(); renderManager();
+    }, function () {
+      if (!editing || epoch !== catalogEpoch) return;
+      catalogLoading = false;
+      catalogError = 'No se pudo actualizar. Conservamos tu selección; podés volver a intentar.';
+      renderManager();
     });
-    if (focusKey) list.querySelector('[data-toggle="' + focusKey + '"]').focus();
   }
 
   // Fuentes: créditos completos de la foto a la vista y servicios del inicio, como texto plano.
@@ -275,7 +258,7 @@
     document.getElementById('manage-list').hidden = value;
     document.getElementById('sources-view').hidden = !value;
     document.getElementById('reset-button').hidden = value;
-    document.getElementById('manage-title').textContent = value ? 'Fuentes' : 'Tu fila de apps';
+    document.getElementById('manage-title').textContent = value ? 'Fuentes' : 'Apps y orden';
     document.querySelector('.manage-description').textContent = value
       ? 'Créditos de la foto a la vista y servicios que usa el inicio.'
       : 'Ocultar una app acá no la desinstala de la tele.';
@@ -299,7 +282,9 @@
       renderManager();
       panel.querySelector('button').focus();
       panel.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      refreshCatalog();
     } else {
+      catalogEpoch++; catalogLoading = false;
       // Las tarjetas se regeneran al editar: volver a la misma app aunque su botón sea nuevo.
       var target = lastFocusKey ? document.querySelector('.tile[data-id="' + lastFocusKey + '"]') : null;
       if (!target && lastFocus && document.body.contains(lastFocus)) target = lastFocus;
@@ -312,14 +297,16 @@
   editButton.addEventListener('click', function () { setEditing(true); });
   document.getElementById('done-button').addEventListener('click', function () { setEditing(false); });
   document.getElementById('reset-button').addEventListener('click', function () {
-    items = defaults.map(function (item) { return Object.assign({}, item, { visible: true }); });
-    save(); render(); document.getElementById('reset-button').focus();
+    var extras = items.filter(function (item) { return item.catalogApp; });
+    items = catalog.restore(defaults, null).concat(extras.map(function (item) { return Object.assign({}, item, {visible:false}); }));
+    save(); render(); renderManager(); document.getElementById('reset-button').focus();
     say('Se restauraron los accesos y el orden inicial.', 5000);
   });
 
   // ---------- Control remoto ----------
   function moveFocus(key) {
     var active = document.activeElement;
+    if (editing && !sourcesOpen && manager.handlesNavigation(key, active)) return;
     // En TV el dock es una sola fila y render() sólo monta los íconos visibles.
     // Izquierda/derecha no necesitan medir el vidrio mientras se está animando.
     if (onTV && !editing && active && active.classList.contains('tile') && (key === 'ArrowLeft' || key === 'ArrowRight')) {
@@ -351,14 +338,14 @@
     });
     if (best) {
       best.focus();
-      // El dock de TV ya entra completo: desplazarlo tras focus fuerza otro layout.
+      // En TV el foco revela la app con medidas cacheadas, sin otro layout por tecla.
       if (!onTV || editing || !best.classList.contains('tile')) best.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     }
   }
   document.addEventListener('keydown', function (event) {
     var key = event.key;
     if (editing && key === 'Tab') {
-      var controls = Array.prototype.slice.call(panel.querySelectorAll('button:not([disabled])'));
+      var controls = Array.prototype.slice.call(panel.querySelectorAll('button:not([disabled])')).filter(function (button) { return button.getClientRects().length > 0; });
       var index = controls.indexOf(document.activeElement);
       if (event.shiftKey && index === 0) { event.preventDefault(); controls[controls.length - 1].focus(); }
       else if (!event.shiftKey && index === controls.length - 1) { event.preventDefault(); controls[0].focus(); }
@@ -431,7 +418,7 @@
   firstTile.focus();
   showFocus(firstTile);
   if (!onTV) say('Vista previa: probá las flechas, OK (Enter) y Atrás (Escape).', 8000);
-  if (onTV) items.forEach(function (item) {
+  if (onTV) items.filter(function (item) { return item.visible; }).forEach(function (item) {
     bridge.isInstalled(item.appId).then(function (result) {
       installed[item.key] = result;
       updateAvailability(item);

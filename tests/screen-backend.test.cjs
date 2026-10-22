@@ -22,7 +22,7 @@ function setup(change=()=>{},options={}) {
   const config={enabled:true,token:'synthetic-user-token-not-a-secret',profile:'Mi pantalla WiZ Living',
     hardwareVerified:true};
   change(data,config,rpc);
-  const backend=require(file)({...options,config,rpc,read:async()=>({devices:lamps}),
+  const backend=require(file)({...options,config,rpc,read:options.read||(async()=>({devices:lamps})),
     probe:options.probe||(async()=>({framesVerified:false,sourceFreshness:'unknown'}))});
   return {backend,data,calls,get closed(){return closed;},get connections(){return connections;}};
 }
@@ -132,6 +132,69 @@ test('stop waits for asynchronous off confirmation before allowing baseline rest
   assert.deepEqual(await t.backend.stop(ids),{active:false});
   assert.equal(waits,1);
   assert.deepEqual(t.calls.filter(q=>q.command==='componentstate').map(q=>q.componentstate.state),[false]);
+});
+
+test('owned stop confirms the writer OFF without querying unreachable lamps while it is still flooding them',async()=>{
+  let reads=0;
+  const t=setup(d=>{d.server.components[0].enabled=true;},{read:async()=>{reads++;throw Error('WiZ timeout while output active');}});
+  assert.deepEqual(await t.backend.stop(ids),{active:false});
+  assert.equal(reads,0,'live UDP response is not a precondition for stopping the owned writer');
+  assert.deepEqual(t.calls.filter(q=>q.command==='componentstate').map(q=>q.componentstate.state),[false]);
+  assert.equal(t.data.server.components[0].enabled,false);
+});
+
+test('owned stop still rejects foreign profiles, selections and invalid static output configuration without lamp reads or mutation',async()=>{
+  const cases=[
+    d=>{d.admin.adminRequired=true;},
+    d=>{d.server.currentInstance=1;},
+    d=>{d.server.instance[0].running=false;},
+    d=>{d.server.instance[0].friendly_name='Another room';},
+    d=>{d.config.device.type='other';},
+    d=>{d.config.device.port=1234;},
+    d=>{d.config.device.lamps[0].macAddress=ids[1].slice(4);},
+    d=>{d.config.device.lamps[0].macAddress='aabbcc000000';},
+    d=>{d.config.device.lamps[0].macAddress='invalid';},
+    d=>{d.config.device.lamps[0].ipAddress='8.8.8.8';},
+    d=>{d.config.device.lamps[0].ipAddress='not-an-ip';},
+    d=>{d.config.device.lamps[0].ipAddress=d.config.device.lamps[1].ipAddress;},
+    d=>{d.config.leds=[];},
+    d=>{d.config.leds[0].disabled=true;},
+    d=>{d.config.leds[0].hmin=1;},
+    d=>{d.config.leds[0].vmax=2;}
+  ];
+  for(const change of cases){
+    let reads=0;
+    const t=setup(d=>{d.server.components[0].enabled=true;change(d);},{read:async()=>{reads++;throw Error('must not query');}});
+    await assert.rejects(t.backend.stop(ids),e=>e.code==='SCREEN_STOP_UNCONFIRMED');
+    assert.equal(reads,0);assert.equal(t.calls.some(q=>q.command==='componentstate'),false);
+  }
+  for(const selected of [[],[ids[0],ids[0]],[ids[0]],['invalid']]){
+    const t=setup(d=>{d.server.components[0].enabled=true;});
+    await assert.rejects(t.backend.stop(selected),e=>e.code==='SCREEN_STOP_UNCONFIRMED');
+    assert.equal(t.calls.some(q=>q.command==='componentstate'),false);
+  }
+});
+
+test('start and inspect retain strict live WiZ identity and current-IP confirmation',async()=>{
+  for(const devices of [lamps.map(lamp=>({...lamp,reachable:false})),lamps.map(lamp=>({...lamp,ip:lamps[0].ip}))]){
+    let reads=0;
+    const t=setup(()=>{},{read:async()=>{reads++;return {devices};},probe:async()=>({framesVerified:true})});
+    const status=await t.backend.inspect(ids);
+    assert.equal(status.configVerified,false);assert.equal(status.ready,false);assert.equal(status.reason,'selection-mismatch');
+    await assert.rejects(t.backend.start(ids),e=>e.reason==='selection-mismatch');
+    assert.equal(reads,2);assert.equal(t.calls.some(q=>q.command==='componentstate'),false);
+  }
+});
+
+test('an uncertain issued enable compensates OFF even when live lamp reads stop responding after enable',async()=>{
+  let clock=0,reads=0,enabledIssued=false;
+  const t=setup(()=>{},{probe:async()=>({framesVerified:true}),now:()=>clock,
+    read:async()=>{reads++;if(enabledIssued)throw Error('WiZ overloaded');return {devices:lamps};},
+    request:async q=>{if(q.command==='componentstate'&&q.componentstate.state){enabledIssued=true;return {success:true};}},
+    wait:async ms=>{clock+=ms;}});
+  await assert.rejects(t.backend.start(ids),e=>e.reason==='timeout');
+  assert.deepEqual(t.calls.filter(q=>q.command==='componentstate').map(q=>q.componentstate.state),[true,false]);
+  assert.equal(reads,1,'compensation uses authenticated ownership rather than another failing live query');
 });
 
 test('an uncompleted enable has a real elapsed deadline then compensates off exactly once',async()=>{

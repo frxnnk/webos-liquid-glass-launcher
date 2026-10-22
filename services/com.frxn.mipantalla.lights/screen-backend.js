@@ -25,17 +25,22 @@ function layoutMatches(leds, count) {
     }) && led.hmin < led.hmax && led.vmin < led.vmax;
   });
 }
-function matches(device, leds, ids, current) {
+function configurationMatches(device, leds, ids) {
   if (!device || device.type !== 'wiz' || (device.port !== undefined && device.port !== 38899) ||
       !Array.isArray(device.lamps) || device.lamps.length !== ids.length || !layoutMatches(leds,ids.length)) return false;
-  var seen = {};
+  var seen = {}, addresses = {};
   return device.lamps.every(function (lamp) {
     var mac = lamp && protocol.mac(lamp.macAddress);
     var id = 'wiz-' + mac;
+    if (!mac || seen[id] || ids.indexOf(id) === -1 || !protocol.privateIPv4(lamp.ipAddress) || addresses[lamp.ipAddress]) return false;
+    seen[id] = true; addresses[lamp.ipAddress] = true; return true;
+  });
+}
+function liveMatches(device, current) {
+  return device.lamps.every(function (lamp) {
+    var id = 'wiz-' + protocol.mac(lamp.macAddress);
     var actual = current.filter(function (d) { return d.id === id; })[0];
-    if (!mac || seen[id] || ids.indexOf(id) === -1 || !actual || actual.reachable !== true ||
-        !protocol.privateIPv4(lamp.ipAddress) || actual.ip !== lamp.ipAddress) return false;
-    seen[id] = true; return true;
+    return !!actual && actual.reachable === true && actual.ip === lamp.ipAddress;
   });
 }
 module.exports = function createBackend(options) {
@@ -102,7 +107,7 @@ module.exports = function createBackend(options) {
       return waitForOutput(session,desired);
     });
   }
-  function check(session, ids) {
+  function check(session, ids, live) {
     if (!validIds(ids)) return Promise.reject(failure('selection-mismatch'));
     var output;
     return session.request({command:'authorize',subcommand:'adminRequired'}).then(function (result) {
@@ -113,9 +118,12 @@ module.exports = function createBackend(options) {
       return session.request({command:'config',subcommand:'getconfig'});
     }).then(function (result) {
       if (!ids.length) throw failure('selection-required');
+      var device = result.info && result.info.device;
+      if (!configurationMatches(device,result.info && result.info.leds,ids)) throw failure('selection-mismatch');
+      // An owned stop must not depend on lamp replies while that same writer is active.
+      if (live === false) return {outputEnabled:output};
       return options.read(ids).then(function (current) {
-        if (!current || !Array.isArray(current.devices) || !matches(result.info && result.info.device,
-            result.info && result.info.leds,ids,current.devices)) throw failure('selection-mismatch');
+        if (!current || !Array.isArray(current.devices) || !liveMatches(device,current.devices)) throw failure('selection-mismatch');
         return {outputEnabled:output};
       });
     });
@@ -160,7 +168,7 @@ module.exports = function createBackend(options) {
           // A timed-out session may already be closed. Revalidate before the single compensating stop.
           try { session.close(); } catch (ignored) {}
           return use(function (recovery) {
-            return check(recovery,ids).then(function () { return setOutput(recovery,false); });
+            return check(recovery,ids,false).then(function () { return setOutput(recovery,false); });
           }).then(function () { throw error; },function () { throw error; });
         });
       });
@@ -168,7 +176,7 @@ module.exports = function createBackend(options) {
     stop:function (ids) {
       // Called only by the session owner with its persisted original selection.
       return use(function (session) {
-        return check(session,ids).then(function () {
+        return check(session,ids,false).then(function () {
           return setOutput(session,false);
         });
       }).catch(function () { var error = Error('No se confirmó la parada de la salida de video.'); error.code = 'SCREEN_STOP_UNCONFIRMED'; throw error; });

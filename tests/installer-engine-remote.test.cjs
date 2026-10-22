@@ -18,7 +18,7 @@ function fixture(options={}){
   function put(p,data,mode=384,dir=false){entries[p]={data,mode,dir,uid:0,ino:seq++};}
   function stat(e){return {uid:e.uid,mode:e.mode,nlink:1,size:Buffer.byteLength(e.data||''),ino:e.ino,dev:1,isFile:()=>!e.dir&&!e.link,isDirectory:()=>!!e.dir&&!e.link,isSymbolicLink:()=>!!e.link};}
   for(const p of [ROOT,'/var/lib/webosbrew','/var/lib/webosbrew/init.d'])put(p,'',448,true);
-  put('/etc/starfish-release','Rockhopper release 5.6.2-21 (jhericurl-jimna)\n');put(APP,JSON.stringify({id:'com.frxn.mipantalla',version:'0.7.8'}));
+  put('/etc/starfish-release','Rockhopper release 5.6.2-21 (jhericurl-jimna)\n');put(APP,JSON.stringify({id:'com.frxn.mipantalla',version:'0.7.9'}));
   for(const p of ['home-watch.js','home-input.js','home-power.js','home-autostart.sh'])put(SERVICE+'/'+p,'source');
   const f={constants:{O_RDONLY:0,O_WRONLY:1,O_CREAT:64,O_EXCL:128,O_NOFOLLOW:131072},
     lstatSync(p){if(!entries[p])throw missing();return stat(entries[p]);},

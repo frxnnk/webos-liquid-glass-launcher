@@ -1,0 +1,53 @@
+/* Catálogo de apps: lista local, foco simple y sin filtros animados. */
+.apps-manager { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.apps-toolbar { display: flex; flex: none; align-items: center; justify-content: space-between; }
+.apps-summary { margin: 0 1rem 0 0; color: var(--text-2); font-size: 1rem; }
+.apps-refresh { flex: none; height: 2.8rem; padding: 0 1rem; font-size: .95rem; }
+.apps-feedback { flex: none; min-height: 1.3em; margin: .8rem 0 .7rem; color: var(--text-3); font-size: .95rem; }
+.apps-rows { flex: 1; min-height: 0; overflow-x: hidden; overflow-y: auto; padding: .3rem .4rem; }
+.apps-rows::-webkit-scrollbar { width: .4rem; }
+.apps-rows::-webkit-scrollbar-track { background: transparent; }
+.apps-rows::-webkit-scrollbar-thumb { background: rgba(255,255,255,.22); border-radius: 1rem; }
+.apps-row { display: flex; align-items: center; min-height: 4.9rem; padding: .55rem .4rem; border-radius: .9rem; }
+.apps-row + .apps-row { border-top: 1px solid rgba(255,255,255,.07); }
+.apps-row:focus-within { background: rgba(255,255,255,.08); }
+.apps-icon { position: relative; flex: none; width: 3.1rem; height: 3.1rem; overflow: hidden; border-radius: .8rem; background: rgba(255,255,255,.08); }
+.apps-initial { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-2); font-size: 1.2rem; }
+.apps-image { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; }
+.apps-name { flex: 1; min-width: 0; margin: 0 .9rem; font-weight: 600; }
+.apps-title { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 1.2rem; }
+.apps-name small { display: block; margin-top: .2rem; color: var(--text-3); font-size: .86rem; font-weight: 400; }
+.apps-row.is-hidden .apps-icon { opacity: .45; }
+.apps-toggle { flex: none; height: 2.9rem; padding-right: .8rem; font-size: .95rem; }
+.apps-toggle .switch { width: 3.1rem; height: 1.85rem; margin-right: .55rem; }
+.apps-toggle .switch-knob { top: .2rem; left: .2rem; width: 1.45rem; height: 1.45rem; }
+.apps-toggle .switch-label { min-width: 4rem; }
+.apps-toggle[aria-checked="true"] .switch-knob { -webkit-transform: translateX(1.25rem); transform: translateX(1.25rem); }
+.apps-move { flex: none; width: 2.8rem; height: 2.8rem; margin-left: .5rem; border-radius: .7rem; background: rgba(255,255,255,.08); font-size: 1.45rem; font-weight: 500; }
+.apps-move:disabled { opacity: .22; }
+.apps-refresh:disabled { opacity: .5; }
+.apps-manager button:focus { -webkit-transform: none; transform: none; background: #fff; color: #111827; box-shadow: 0 0 0 .18rem rgba(255,255,255,.22); }
+@media (max-width: 1000px) {
+  .apps-manager { min-height: 12rem; }
+  .apps-toolbar { align-items: flex-start; }
+  .apps-summary { font-size: .85rem; }
+  .apps-refresh { height: 2.6rem; font-size: .85rem; }
+  .apps-feedback { font-size: .8rem; }
+  .apps-icon { width: 2.5rem; height: 2.5rem; }
+  .apps-name { margin: 0 .6rem; }
+  .apps-title { font-size: 1rem; }
+  .apps-name small { font-size: .73rem; }
+  .apps-row { min-height: 4.3rem; }
+  .apps-toggle { height: 2.65rem; font-size: .85rem; }
+  .apps-toggle .switch-label { min-width: 3.5rem; }
+  .apps-move { width: 2.4rem; height: 2.65rem; margin-left: .35rem; font-size: 1.25rem; }
+}
+@media (max-width: 560px) {
+  .apps-toolbar { align-items: center; }
+  .apps-summary { max-width: 10rem; }
+  .apps-toggle { padding-right: .45rem; }
+  .apps-toggle .switch-label { display: none; }
+  .apps-toggle .switch { margin-right: 0; }
+  .apps-icon { width: 2rem; height: 2rem; }
+  .apps-move { width: 2.1rem; margin-left: .3rem; }
+}

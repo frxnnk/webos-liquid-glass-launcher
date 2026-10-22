@@ -5,7 +5,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const root = path.join(__dirname, '..');
-const APP_FILES = ['index.html', 'styles.css', 'config.js', 'bridge.js', 'weather.js', 'backgrounds.js', 'daily-photos.js', 'transitions.js', 'ambient-wallpaper.js', 'lights-client.js', 'lights-panel.js', 'lights-panel.css', 'app.js', 'appinfo.json', 'icon.png', 'LICENSE'];
+const APP_FILES = ['index.html', 'styles.css', 'config.js', 'bridge.js', 'app-catalog.js', 'apps-manager.js', 'apps-manager.css', 'dock-scroll.js', 'weather.js', 'backgrounds.js', 'daily-photos.js', 'transitions.js', 'ambient-wallpaper.js', 'lights-client.js', 'lights-panel.js', 'lights-panel.css', 'app.js', 'appinfo.json', 'icon.png', 'LICENSE'];
 const FIXTURE_HTML = '<script src="config.js"></script>\n  <script src="wallpapers.js"></script>\n  <script src="weather-config.js"></script>\n  <script src="daily-photos-config.js"></script>\n  <script src="transitions-config.js"></script>\n  <script src="app.js"></script>';
 
 function withFixture(prepare, check) {
@@ -124,7 +124,7 @@ test('runtime CSS and JS avoid features missing from Chromium 68', () => {
   for (const pattern of [/(?<![-\w])gap\s*:/, /(?<![-\w])aspect-ratio\s*:/, /color-mix\(/, /oklch\(/, /@container/, /\binset\s*:/, /\b(?:clamp|min|max)\(/, /:focus-visible/, /:is\(/, /100vh/, /(?<!backdrop-)filter:\s*blur/]) {
     assert.equal(pattern.test(css), false, 'styles.css uses ' + pattern);
   }
-  const js = ['app.js', 'config.js', 'weather.js', 'backgrounds.js', 'daily-photos.js', 'transitions.js', 'bridge.js'].map((file) => fs.readFileSync(path.join(root, file), 'utf8')).join('\n');
+  const js = ['app.js', 'config.js', 'app-catalog.js', 'apps-manager.js', 'dock-scroll.js', 'weather.js', 'backgrounds.js', 'daily-photos.js', 'transitions.js', 'bridge.js'].map((file) => fs.readFileSync(path.join(root, file), 'utf8')).join('\n');
   assert.doesNotMatch(js, /\?\.|\?\?|=>|\bclass\s+\w|\blet\s|\bconst\s|`|\basync\b|\bawait\b/);
   assert.doesNotMatch(js, /geolocation|getImageData|toDataURL|innerHTML|insertAdjacentHTML|randomUUID|com\.webos\.app\.browser/);
 });

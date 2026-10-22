@@ -4,9 +4,11 @@ Guía al **2026-10-21**. Mi pantalla es una app web con servicio local: no cambi
 las interfaces internas de YouTube, Netflix o Ajustes. Se puede usar sin root. **Home nativo,
 encendido automático y captura de otras apps requieren configuración adicional**.
 
-La **0.7.8 experimental está instalada**, con ciclo completo de captura y un parche nativo
-verificado localmente. Manual por API restauró 6/6; **video y Home con captura activa todavía
-requieren confirmación física de esta candidata**.
+La **0.7.9 experimental está instalada**, con ciclo completo de captura y un parche nativo
+verificado localmente. El dueño confirmó colores de YouTube y Home sin pantalla negra.
+Manual por API restauró 6/6; en la última prueba necesitó un segundo intento para dos luces.
+El botón físico de Pantalla completa y la estabilidad prolongada siguen pendientes.
+Para elegir apps y ordenar el inicio, ver [Personalizar](customizing.md).
 Ver [reparación experimental y requisitos](capture-repair.md). En 0.7.6,
 desde el asistente de PC, el dueño confirmó colores de YouTube en seis WiZ y se verificó
 su restauración 6/6, incluidas dos en escena 6.
@@ -35,7 +37,7 @@ físico con hooks nuevos. [Evidencia exacta](local-installer.md#qué-está-proba
 | Dock, fondos, clima y Transitions | Developer Mode | App probada en la TV. |
 | WiZ manual y Acompañar fondo | Servicio incluido y lámparas en la LAN | Seis lámparas controladas; color del fondo confirmado. |
 | Home y apertura al encender | Root/HBC persistente, configuración y recuperación | Confirmados desde YouTube y tras apagar 20 s con el control en 0.7.2. |
-| Colores de otras apps | Root, PicCap, HyperHDR y configuración privada | YouTube y restauración 6/6 confirmados desde PC en 0.7.6. Botón TV 0.7.8, boot de captura, HDMI y DRM pendientes. [Detalle](screen-sync.md). |
+| Colores de otras apps | Root, PicCap, HyperHDR y configuración privada | YouTube y restauración 6/6 confirmados desde PC en 0.7.6. Botón TV 0.7.9, boot de captura, HDMI y DRM pendientes. [Detalle](screen-sync.md). |
 | Menos anuncios y recolección | Ajustes y revisión de componentes | Ver [limpieza](cleaning.md); no demuestra cero telemetría. |
 
 Hardware: **LG 49UN7310PSC, webOS 5.6.2-21, firmware 04.64.00**, board `K6LP_ATSC_BR`.
@@ -122,12 +124,12 @@ No instalar si falla. Esto no prueba permisos ni comportamiento físico de la TV
 
 ### Paquete público fijado para el piloto
 
-El [release v0.7.8](https://github.com/frxnnk/webos-liquid-glass-launcher/releases/tag/v0.7.8)
-contiene un IPK público limpio: **57 archivos, 1.696.600 bytes**, SHA-256
-`09cf04a51d5ebf9cfb51bd28dc43fc49700443e54aabb89a18846ae462547d60`.
+El [release v0.7.9](https://github.com/frxnnk/webos-liquid-glass-launcher/releases/tag/v0.7.9)
+contiene un IPK público limpio: **62 archivos, 1.701.750 bytes**, SHA-256
+`295e50680fb9cfa358563f8b77d62b5bf742cdb766e37865d1a59d87e042e477`.
 No incluye `weather-config.js`, `lights-config.js` ni `screen-config.json`; difiere del paquete
 privado instalado anteriormente. El asistente lo descarga y verifica sólo si la app está
-ausente. No sobrescribe una 0.7.8 existente; actualizar otra versión está bloqueado hasta
+ausente. No sobrescribe una 0.7.9 existente; actualizar otra versión está bloqueado hasta
 implementar preservación. [Uso y restauración del piloto](local-installer.md).
 
 `dist/` y `artifacts/` están ignorados. Un IPK construido con configuración privada puede

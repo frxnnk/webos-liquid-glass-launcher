@@ -4,7 +4,10 @@ This is an experimental patch candidate for the PicCap 0.5.3 capture backend.
 It was compiled for ARM and installed on the reference TV with capture OFF;
 the ABI/version check passed. The app's Manual API stopped capture and independently
 restored six lamp baselines; Home with capture OFF reached the launcher foreground.
-Video color tracking and Home with capture ON still require physical validation.
+The owner subsequently confirmed YouTube color tracking and a normal launcher image
+after Home with capture ON (0.7.9). Manual restored all six lamp baselines, but two
+required a second Manual attempt; sustained stability is not established. See
+[the current checkpoint](../../docs/screen-sync.md#checkpoint-079-parada-y-catálogo).
 The local lifetime defect is demonstrated; the
 cause of the reference TV's black-screen/kernel incident remains unisolated.
 

@@ -1,14 +1,40 @@
 # Colores de YouTube y HDMI
 
-**Estado al 2026-10-21: 0.7.8 experimental instalada; nueva prueba física pendiente.**
+**Estado al 2026-10-21: 0.7.9 instalada; captura experimental con límites de parada documentados.**
 
 La 0.7.8 incorpora una [reparación experimental](capture-repair.md) del capturador nativo,
 Start desde captura apagada y parada completa antes de restaurar las luces. Exige la versión
 nativa parcheada exacta. En esta TV ya se comprobó el estado listo para iniciar, con seis
 lámparas y salida apagada. Después Manual por API detuvo PicCap y restauró 6/6 estados
 exactos; Home con captura apagada devolvió Mi pantalla como foreground. El seguimiento de
-video y Home con captura activa siguen pendientes de confirmación física.
+video y Home con captura activa se comprobaron después, como se detalla en el checkpoint 0.7.9.
 Los plazos de Start y Manual ahora son de hasta 25 s; un timeout conserva la incertidumbre.
+
+## Checkpoint 0.7.9: parada y catálogo
+
+El dueño confirmó que las seis luces seguían los colores de YouTube y que la imagen se veía
+bien con la captura parcheada de 0.7.8. La telemetría informó UI y video activos a unos 48 FPS;
+no es una medición de latencia ni de paquetes UDP por segundo.
+
+Durante la salida activa, las seis consultas getPilot fallaron desde TV y PC. HyperHDR
+informó LEDDEVICE encendido; tras apagarlo, las seis volvieron a responder. El motivo exacto
+de esa falta de respuesta no quedó aislado. Un estado base outputEnabled:false cuando falla
+la comprobación WiZ no demuestra que la salida física esté apagada.
+
+La 0.7.9 valida el perfil autenticado, instancia, driver, puerto, selección de MACs, IPs
+privadas únicas y regiones antes de apagar la salida propia, sin exigir respuestas WiZ
+mientras ese mismo escritor está activo. START conserva la verificación viva. La compensación
+de un inicio incierto aplica el mismo criterio para apagar, sin habilitar una salida nueva.
+
+Una prueba Home con captura activa llegó a Mi pantalla y mantuvo PicCap respondiendo;
+el dueño confirmó que la pantalla se veía bien. Manual detuvo la captura y apagó la salida; restauró cuatro
+luces en el primer intento y conservó dos en el registro de recuperación. Reintentar Manual
+restauró las dos restantes. Una lectura UDP independiente confirmó 6/6 estados originales y
+el registro quedó ausente. No borres ese registro para destrabar la UI: Manual reanuda lo que
+falta. La prueba terminó con captura apagada.
+
+Esto no acredita estabilidad prolongada, standby, HDMI, contenido protegido ni que esté
+resuelta la causa del incidente de pantalla negra.
 
 ## Checkpoint histórico 0.7.7
 

@@ -36,7 +36,8 @@ function harness(onTV, editing = false) {
   const hidden = button('Control oculto', 'hidden-panel', 50, 100, true);
   const first = button('Visible', 'manager', 0, 0);
   const second = button('Mover', 'manager', 100, 0);
-  vm.runInNewContext(navigation, {document, panel, editing, onTV, window: {}, setEditing() {}});
+  vm.runInNewContext(navigation, {document, panel, editing, onTV, sourcesOpen:false,
+    manager:{handlesNavigation(){return false;}}, window: {}, setEditing() {}});
   function press(key) { events.keydown({key, preventDefault() {}}); }
   return {document, one, two, lights, edit, hidden, first, second, press};
 }

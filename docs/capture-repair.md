@@ -107,7 +107,13 @@ UI y video detenidos, desconectado y a 0 FPS. Se restauraron **6/6 estados exact
 el WAL de esa sesión mediante consultas UDP independientes; las seis quedaron encendidas y
 el WAL se resolvió. Luego un único Home, con captura apagada, devolvió Mi pantalla como
 foreground. No se recibió aún una confirmación visual de esta prueba y no se probó Home
-con captura activa. El incidente original sigue abierto.
+con captura activa en ese checkpoint. El incidente original sigue abierto.
+
+En la prueba posterior con 0.7.9, el dueño confirmó colores de YouTube y la imagen normal
+al volver con Home mientras la captura estaba activa. La parada expuso una dependencia
+de respuestas WiZ mientras HyperHDR escribía; la 0.7.9 separa esa comprobación para STOP.
+La restauración final necesitó dos intentos de Manual y se verificó 6/6 por UDP.
+Ver [el checkpoint y sus límites](screen-sync.md#checkpoint-079-parada-y-catálogo).
 
 ThreadSanitizer no quedó acreditado: el runtime de WSL abortó antes de las pruebas
 con `unexpected memory mapping`. ASan y UBSan sí se ejecutaron sobre el harness local.

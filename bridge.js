@@ -24,7 +24,7 @@
           else resolve(result);
         }
         var timer = setTimeout(function () {
-          if (token.request && token.request.cancel) token.request.cancel();
+          try { if (token.request && token.request.cancel) token.request.cancel(); } catch (error) { /* Preserve the timeout result. */ }
           finish(new Error('No se pudo confirmar la respuesta de la TV.'));
         }, timeoutMs || 7000);
         try {
@@ -32,7 +32,9 @@
             method: method,
             parameters: parameters,
             onSuccess: function (result) {
-              if (result.returnValue === false) {
+              if (!result || typeof result !== 'object') {
+                finish(new Error('La TV devolvió una respuesta inválida.'));
+              } else if (result.returnValue === false) {
                 finish(new Error(result.errorText || 'La TV rechazó la solicitud.'));
               } else finish(null, result);
             },
@@ -66,6 +68,15 @@
         return request('launch', {
           id: YOUTUBE_ID,
           params: { contentTarget: 'https://www.youtube.com/watch?v=' + videoId }
+        });
+      },
+      listApps: function () {
+        if (!onTV) return Promise.resolve([]);
+        return request('listApps', {}).then(function (result) {
+          if (result.returnValue !== true || !Array.isArray(result.apps)) {
+            throw new Error('La TV no devolvió un catálogo de apps válido.');
+          }
+          return result.apps;
         });
       },
       isInstalled: function (id) {

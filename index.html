@@ -7,6 +7,7 @@
   <title>Mi pantalla</title>
   <link rel="preload" href="assets/wallpaper.svg" as="image">
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="apps-manager.css">
   <link rel="stylesheet" href="lights-panel.css">
 </head>
 <body>
@@ -115,7 +116,7 @@
     <div class="scrim" aria-hidden="true"></div>
     <section id="manage-panel" class="manage-panel glass" role="dialog" aria-modal="true" aria-labelledby="manage-title" hidden>
       <p class="panel-kicker">Personalizar</p>
-      <h2 id="manage-title">Tu fila de apps</h2>
+      <h2 id="manage-title">Apps y orden</h2>
       <p class="manage-description">Ocultar una app acá no la desinstala de la tele.</p>
       <div id="manage-list" class="manage-list"></div>
       <div id="sources-view" class="sources-view" hidden></div>
@@ -204,6 +205,9 @@
   <script src="transitions-config.js"></script>
   <script src="lights-config.js"></script>
   <script src="bridge.js"></script>
+  <script src="app-catalog.js"></script>
+  <script src="apps-manager.js"></script>
+  <script src="dock-scroll.js"></script>
   <script src="weather.js"></script>
   <script src="backgrounds.js"></script>
   <script src="daily-photos.js"></script>
