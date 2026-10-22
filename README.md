@@ -62,6 +62,11 @@ offline posterior restauró las seis luces al baseline exacto. Un único Home co
 capturadores apagados llegó a Mi pantalla según foreground; el dueño confirmó que el inicio se ve bien.
 La causa y una corrección permanente siguen pendientes.
 
+**Agente de IA en la PC:** [`tools/webos-mcp`](tools/webos-mcp/README.md) es un servidor MCP (sin dependencias) para que
+Claude Code, opencode u otro cliente vean y manejen la TV: estado, apps, luces, Auto y capturas. El agente corre en la PC;
+en la TV (ARMv7 de 32 bits, ~300 MB libres, Node 8) no se puede instalar Claude Code. Verificado con SSH real contra la TV
+en sus herramientas de lectura; tests con un SSH simulado.
+
 [**Tutorial completo**](docs/tutorial.md) · [Privacidad y limpieza](docs/privacy-cleanup.md) ·
 [Funciones futuras](docs/product-vision.md) · [Instalador desde el navegador](docs/browser-installer.md)
 · [Próximos pasos: rendimiento, referencias visuales, Flutter y wizard local](docs/next-steps.md)
