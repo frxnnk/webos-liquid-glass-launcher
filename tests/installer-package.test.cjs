@@ -24,7 +24,7 @@ test('absence is never inferred from malformed or duplicate inventory records',(
   assert.equal(validInventory({returnValue:true,apps:[{id:'netflix'}]}),true);
 });
 test('package pin is immutable and rejects modified data',()=>{
-  assert.equal(PIN.version,'0.7.12'); assert.equal(PIN.sha256,'ae47b9c7446dfeb39f9efdd129375634acc06860248d2d6a4663948ad9ef8cca');
+  assert.equal(PIN.version,'0.7.12'); assert.equal(PIN.sha256,'19909bf50435550be5c70929d9ab7aa8e94800fdf76d9603329933f03a16b871');
   assert.throws(()=>verifyPackage(Buffer.from('not the IPK')),/PACKAGE_HASH_MISMATCH/);
 });
 test('an already installed exact version is skipped without touching disk or TV',async()=>{

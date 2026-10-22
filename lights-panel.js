@@ -577,11 +577,10 @@
       levelCaption.textContent = !knownLevel ? 'Brillo sin confirmar' : current.level === null ? 'Niveles diferentes' : 'Brillo del grupo';
       levelFill.style.width = knownLevel && current.level !== null ? current.level + '%' : '0%';
       levelTrack.setAttribute('data-known', knownLevel && current.level !== null ? 'true' : 'false');
+      // El resumen solo habla cuando algo anda mal o se está consultando; en lo normal las casillas y el contador ya lo dicen.
       q('.lights-summary').textContent = view.phase === 'checking' ? 'Consultando el servicio de luces…' :
-        view.phase === 'unavailable' ? 'Control de luces no disponible: ' + view.reason :
-        (caps.demo ? 'Demo: no se envían cambios a lámparas reales. ' : '') +
-        (chosen.length ? chosen.length + ' de ' + view.devices.length + ' marcadas para el living.' :
-          view.devices.length ? 'Marcá las lámparas del living para controlarlas.' : 'Buscá lámparas y marcá solo las del living.');
+        view.phase === 'unavailable' ? 'Control de luces no disponible: ' + view.reason : '';
+      host.setAttribute('data-demo', caps.demo ? 'true' : 'false');
       q('.lights-status').textContent = view.busy || view.message;
       host.setAttribute('aria-busy', view.busy ? 'true' : 'false');
       renderList(view);

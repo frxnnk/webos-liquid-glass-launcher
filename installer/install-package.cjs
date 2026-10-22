@@ -2,7 +2,7 @@
 const fs=require('node:fs/promises');
 const path=require('node:path');
 const crypto=require('node:crypto');
-const PIN=Object.freeze({id:'com.frxn.mipantalla',version:'0.7.12',sha256:'ae47b9c7446dfeb39f9efdd129375634acc06860248d2d6a4663948ad9ef8cca',url:'https://github.com/frxnnk/webos-liquid-glass-launcher/releases/download/v0.7.12/com.frxn.mipantalla_0.7.12_all.ipk'});
+const PIN=Object.freeze({id:'com.frxn.mipantalla',version:'0.7.12',sha256:'19909bf50435550be5c70929d9ab7aa8e94800fdf76d9603329933f03a16b871',url:'https://github.com/frxnnk/webos-liquid-glass-launcher/releases/download/v0.7.12/com.frxn.mipantalla_0.7.12_all.ipk'});
 function validInventory(value){
   if(!value||value.returnValue!==true||!Array.isArray(value.apps))return false;
   var seen=Object.create(null);

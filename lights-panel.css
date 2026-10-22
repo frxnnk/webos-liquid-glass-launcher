@@ -10,6 +10,8 @@
 .lights-kicker { display: flex; align-items: center; color: rgba(211, 234, 225, .7); }
 .lights-mark { display: block; width: 1.55rem; height: 1.55rem; margin-right: .65rem; }
 .lights-title { margin: .5rem 0 0; font-size: 3.15rem; font-weight: 650; line-height: 1.05; letter-spacing: -.045em; }
+.lights-summary:empty { display: none; }
+.lights-panel[data-demo="true"] .lights-kicker:after { content: "· demo, sin lámparas reales"; margin-left: .65rem; color: rgba(255, 211, 110, .8); }
 .lights-summary { overflow: hidden; margin: .7rem 0 0; color: var(--text-2); font-size: 1.12rem; line-height: 1.4; white-space: nowrap; text-overflow: ellipsis; }
 .lights-body { display: flex; flex: 1; min-height: 0; margin-top: 1.7rem; }
 .lights-lamps { display: flex; flex: none; flex-direction: column; width: 24rem; margin-right: 2.5rem; padding-top: .2rem; }
