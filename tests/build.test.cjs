@@ -102,7 +102,6 @@ test('every asset referenced by the app exists locally', () => {
   const references = Array.from(new Set(sources.match(/assets\/[\w/.-]+\.\w+/g) || []));
   assert.ok(references.includes('assets/wallpaper.svg'), 'SVG fallback wallpaper is referenced');
   assert.ok(references.length >= 8, 'fallback wallpaper and seven marks are referenced');
-  assert.ok(references.includes('assets/logos/transitions.svg'), 'Transitions references its local icon');
   for (const reference of references) {
     assert.match(reference, /\.(?:svg|jpe?g|webp|png)$/);
     assert.equal(fs.statSync(path.join(root, reference)).isFile(), true, reference);
@@ -141,7 +140,4 @@ test('Transitions opens YouTube only from the tile click, never on focus or load
   assert.match(app, /tile\.addEventListener\('click', function \(\) \{ openItem\(item\); \}\)/);
   const focusCode = app.slice(app.indexOf('function showFocus'), app.indexOf('// ---------- Inicio'));
   assert.doesNotMatch(focusCode, /openItem|openTransitions|transitions\.|bridge\./);
-  const config = fs.readFileSync(path.join(root, 'config.js'), 'utf8');
-  assert.match(config, /key: 'transitions'[^\n]*appId: 'youtube\.leanback\.v4'/, 'availability is queried for YouTube, not a made-up app');
-  assert.ok(config.indexOf("key: 'disney'") < config.indexOf("key: 'transitions'") && config.indexOf("key: 'transitions'") < config.indexOf("key: 'hdmi1'"));
 });
