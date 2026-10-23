@@ -141,3 +141,11 @@ test('Transitions opens YouTube only from the tile click, never on focus or load
   const focusCode = app.slice(app.indexOf('function showFocus'), app.indexOf('// ---------- Inicio'));
   assert.doesNotMatch(focusCode, /openItem|openTransitions|transitions\.|bridge\./);
 });
+
+test('TV focus snaps without animating the icon scale or painting a blurred halo', () => {
+  // Measured on the TV: animating the scale doubles frame time while holding an arrow.
+  const css = fs.readFileSync(path.join(root, 'styles.css'), 'utf8');
+  const tvRules = css.match(/html\.is-tv[^{]*\{[^}]*\}/g).join('\n');
+  assert.doesNotMatch(tvRules, /\.tile[^{]*\{[^}]*transition:[^;}]*transform/);
+  assert.match(tvRules, /html\.is-tv \.tile-icon:after \{ box-shadow: inset 0 0 0 2px rgba\(255, 255, 255, \.92\); \}/);
+});
