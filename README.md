@@ -81,8 +81,9 @@ en sus herramientas de lectura; tests con un SSH simulado.
   (inventario: `space.nuvio.webos`); login y reproducción no se verificaron.
 - Modo **Solo fondo**: foto a pantalla completa, sin textos ni controles. Mantiene la
   rotación de la galería; la primera tecla de salida sólo recupera la interfaz.
-- Ilustración local desde el primer pintado, foto con fundido y una selección diaria de
-  Wikimedia Commons con créditos y licencia. Las fotos incluidas funcionan sin esa descarga.
+- Ilustración local desde el primer pintado, fotos locales con fundido cada 2:30 minutos y,
+  opcionalmente, una selección diaria de Wikimedia Commons con créditos y licencia
+  (copiar `daily-photos-config.example.js` a `daily-photos-config.js`).
 - Clima de la ciudad configurada con Open-Meteo, caché local y estados de dato viejo o sin red.
 - Un episodio aleatorio de John Digweed Transitions en YouTube. Puede aparecer primero el
   selector de perfiles de YouTube; ese paso pertenece a esa app.
