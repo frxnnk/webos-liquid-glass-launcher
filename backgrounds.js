@@ -8,7 +8,7 @@
 // Nunca se leen píxeles del canvas (una foto remota lo deja "tainted" y no importa).
 (function () {
   'use strict';
-  var ROTATE_MS = 5 * 60 * 1000;
+  var ROTATE_MS = 150 * 1000; // 2:30 min
   var FADE_MS = 1200;
   var LOAD_TIMEOUT_MS = 15000;
   var INITIAL_REMOTE_TIMEOUT_MS = 1500;

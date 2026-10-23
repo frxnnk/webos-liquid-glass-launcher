@@ -87,7 +87,8 @@ test('a single photo is shown without a rotation timer', () => {
   assert.equal(state.timers.length, 0);
 });
 
-test('rotates every 5 minutes, preloading the next photo after the fade', () => {
+test('rotates every 2:30 minutes, preloading the next photo after the fade', () => {
+  assert.equal(B.ROTATE_MS, 150000);
   const { slideshow, state, storage } = harness([{ src: 'assets/wallpapers/a.jpg' }, { src: 'assets/wallpapers/b.jpg' }, { src: 'assets/wallpapers/c.jpg' }]);
   slideshow.start();
   assert.deepEqual(state.shown, ['assets/wallpapers/a.jpg']);
@@ -128,12 +129,12 @@ test('pauses while hidden and advances on return when the interval elapsed', () 
   state.hidden = true;
   slideshow.visibilityChanged();
   assert.equal(state.rotation().length, 0, 'rotation timer cleared while hidden');
-  state.now += 2 * 60000;
+  state.now += 60000;
   state.hidden = false;
   slideshow.visibilityChanged();
   assert.equal(state.shown.length, 1, 'not due yet');
   assert.equal(state.rotation().length, 0);
-  assert.equal(state.timers.some((timer) => timer.ms === 3 * 60000), true, 'waits the remaining time');
+  assert.equal(state.timers.some((timer) => timer.ms === B.ROTATE_MS - 60000), true, 'waits the remaining time');
   state.hidden = true;
   slideshow.visibilityChanged();
   state.now += 10 * 60000;
@@ -155,7 +156,7 @@ test('pauses pending preloads while hidden and starts them again on return', () 
   state.now = 60000;
   slideshow.visibilityChanged();
   const resumedPreload = state.timers.find((timer) => timer.ms < B.FADE_MS + 1000);
-  assert.ok(resumedPreload, 'preloading is restored without waiting five minutes');
+  assert.ok(resumedPreload, 'preloading is restored without waiting a full rotation');
   state.fire(resumedPreload);
   assert.deepEqual(state.loads, ['assets/wallpapers/a.jpg', 'assets/wallpapers/b.jpg']);
 });
