@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Parcialmente nublado (noche)">
+  <path transform="translate(2 1) scale(0.62)" d="M38 9a23 23 0 1 0 18 34A19 19 0 0 1 38 9z" fill="#E6EAF7"/>
+  <path transform="translate(4 14)" d="M17 40h28c6 0 11-5 11-11 0-5.6-4.2-10.2-9.6-10.9C44.6 11.7 38.7 7 31.8 7 24.4 7 18.2 12.4 17 19.5 11.9 20.5 8 25 8 30.4 8 35.7 12.3 40 17.6 40z" fill="#F4F6FA"/>
+</svg>

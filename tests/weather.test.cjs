@@ -51,7 +51,7 @@ test('requests the official endpoint with the documented current fields', () => 
   const { weather, state } = harness();
   weather.start();
   assert.equal(state.requests.length, 1);
-  assert.equal(state.requests[0].url, 'https://api.open-meteo.com/v1/forecast?latitude=-10.5&longitude=20.25&current=temperature_2m,apparent_temperature,weather_code,is_day&timezone=auto');
+  assert.equal(state.requests[0].url, 'https://api.open-meteo.com/v1/forecast?latitude=-10.5&longitude=20.25&current=temperature_2m,apparent_temperature,weather_code,is_day&daily=temperature_2m_max,temperature_2m_min&forecast_days=1&timezone=auto');
   assert.ok(state.requests[0].timeout > 0 && state.requests[0].timeout <= 10000);
   assert.equal(state.last().state, 'loading');
 });
@@ -72,10 +72,13 @@ test('0 °C is a valid reading; unknown values are never turned into 0', () => {
 });
 
 test('describes WMO codes in Spanish with day and night icons', () => {
-  assert.deepEqual({ ...W.describe({ code: 0, isDay: true }) }, { label: 'Despejado', icon: 'clear-day' });
-  assert.deepEqual({ ...W.describe({ code: 2, isDay: false }) }, { label: 'Parcialmente nublado', icon: 'partly-night' });
+  assert.deepEqual({ ...W.describe({ code: 0, isDay: true }) }, { label: 'Despejado', icon: 'despejado-dia' });
+  assert.deepEqual({ ...W.describe({ code: 0, isDay: false }) }, { label: 'Despejado', icon: 'despejado-noche' });
+  assert.deepEqual({ ...W.describe({ code: 2, isDay: true }) }, { label: 'Parcialmente nublado', icon: 'parcial' });
+  assert.deepEqual({ ...W.describe({ code: 2, isDay: false }) }, { label: 'Parcialmente nublado', icon: 'parcial-noche' });
   assert.equal(W.describe({ code: 63, isDay: true }).label, 'Lluvia');
-  assert.equal(W.describe({ code: 95, isDay: true }).icon, 'storm');
+  const icons = { 3: 'nublado', 45: 'niebla', 53: 'llovizna', 63: 'lluvia', 73: 'nieve', 95: 'tormenta' };
+  for (const code of Object.keys(icons)) assert.equal(W.describe({ code: Number(code), isDay: true }).icon, icons[code], code);
   assert.equal(W.describe({ code: 77, isDay: true }).label, 'Nieve granulada');
   assert.equal(W.parseForecast(body({ weather_code: 97 })).code, 97);
 });
@@ -218,4 +221,67 @@ test('XHR transport classifies timeouts, HTTP errors and bad JSON', () => {
   context.navigator.onLine = false;
   request('https://x', 8000, done);
   assert.deepEqual(outcomes, ['timeout', 'http:500', 'invalid', 'yes', 'offline']);
+});
+
+test('every icon name has its file in assets/weather, including the unknown one', () => {
+  const names = new Set(['desconocido']);
+  for (const code of [0, 1, 2, 3, 45, 48, 51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 71, 73, 75, 77, 80, 81, 82, 85, 86, 95, 96, 97, 99]) {
+    names.add(W.describe({ code, isDay: true }).icon);
+    names.add(W.describe({ code, isDay: false }).icon);
+  }
+  assert.deepEqual([...names].sort(), ['desconocido', 'despejado-dia', 'despejado-noche', 'llovizna', 'lluvia', 'niebla', 'nieve', 'nublado', 'parcial', 'parcial-noche', 'tormenta']);
+  for (const name of names) {
+    assert.equal(W.iconUrl(name), 'assets/weather/' + name + '.svg');
+    assert.equal(fs.statSync(path.join(__dirname, '..', W.iconUrl(name))).isFile(), true, name);
+  }
+});
+
+test('today max and min are read when valid and left out otherwise', () => {
+  const daily = (max, min) => ({ ...body({}), daily: { time: ['2026-10-20'], temperature_2m_max: [max], temperature_2m_min: [min] } });
+  const reading = W.parseForecast(daily(22.4, 10.6));
+  assert.equal(reading.max, 22.4);
+  assert.equal(reading.min, 10.6);
+  assert.equal(W.parseForecast(daily(0, -3)).max, 0, '0 °C is a valid max');
+  for (const bad of [null, '22', NaN, 99]) {
+    const parsed = W.parseForecast(daily(bad, bad));
+    assert.notEqual(parsed, null, 'a bad daily value never drops the current reading');
+    assert.equal(parsed.max, null, String(bad));
+    assert.equal(parsed.min, null, String(bad));
+  }
+  assert.equal(W.parseForecast(daily(5, 9)).max, null, 'max below min is rejected');
+  assert.equal(W.parseForecast(body({})).max, null, 'no daily block');
+});
+
+test('max and min survive the cache', () => {
+  const storage = memoryStorage();
+  const first = harness({ storage });
+  first.weather.start();
+  first.state.requests[0].done(null, { ...body({}), daily: { time: ['2026-10-20'], temperature_2m_max: [22], temperature_2m_min: [11] } });
+  const second = harness({ storage });
+  second.weather.start();
+  assert.equal(second.state.last().reading.max, 22);
+  assert.equal(second.state.last().reading.min, 11);
+});
+
+test('the card shows icon file, condition with ST, max/min and place; the footer shows when it was updated', () => {
+  const node = () => ({ textContent: '', hidden: false, attributes: {}, setAttribute(name, value) { this.attributes[name] = String(value); }, getAttribute(name) { return this.attributes[name] ?? null; } });
+  const parts = { '.weather-icon': node(), '.weather-temp': node(), '.weather-condition': node(), '.weather-range': node(), '.weather-meta': node() };
+  const root = Object.assign(node(), { querySelector: (selector) => parts[selector] || null });
+  const status = node();
+  const reading = W.parseForecast({ ...body({ weather_code: 3 }), daily: { temperature_2m_max: [22], temperature_2m_min: [11] } });
+  const view = { state: 'ok', place: 'Prueba', reading, condition: W.describe(reading), fetchedAt: NOW, validAt: reading.validAt };
+  W.renderInto(root, view, status);
+  assert.equal(parts['.weather-icon'].getAttribute('src'), 'assets/weather/nublado.svg');
+  assert.equal(parts['.weather-temp'].textContent, '18°');
+  assert.equal(parts['.weather-condition'].textContent, 'Nublado · ST 18°');
+  assert.equal(parts['.weather-range'].textContent, 'Máx 22° · Mín 11°');
+  assert.equal(parts['.weather-range'].hidden, false);
+  assert.match(parts['.weather-meta'].textContent, /^Prueba · \d\d:\d\d$/);
+  assert.match(status.textContent, /^Clima actualizado a las \d\d:\d\d$/);
+  assert.equal(status.getAttribute('data-state'), 'ok');
+  W.renderInto(root, { state: 'error', place: 'Prueba', reason: 'Sin conexión' }, status);
+  assert.equal(parts['.weather-icon'].getAttribute('src'), 'assets/weather/desconocido.svg');
+  assert.equal(parts['.weather-range'].hidden, true);
+  assert.equal(status.textContent, 'Clima no disponible: Sin conexión');
+  assert.equal(status.getAttribute('data-state'), 'error');
 });
