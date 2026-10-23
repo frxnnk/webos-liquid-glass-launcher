@@ -124,6 +124,9 @@ test('an added app beyond the dock edge becomes visible through TV arrows withou
   h.control(prime, 'toggle').click();
   h.click('done-button');
   const grid = h.document.getElementById('apps-grid');
+  // Narrow enough that the added app starts outside the viewport whatever the built-in count.
+  grid.clientWidth = 340;
+  h.window.dispatch('resize');
   const last = h.document.querySelector(`.tile[data-id="${prime}"]`);
   grid.geometryReads = 0;
   grid.children.forEach(tile => { tile.geometryReads = 0; });

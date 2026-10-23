@@ -96,7 +96,7 @@ Developer Mode. Root/HBC no hace ese directorio inmune a la limpieza.
 | `config.js` | IDs, logos y orden inicial. Confirmar IDs en cada TV. |
 | `weather-config.js` | Copiar `weather-config.example.js`; ciudad y coordenadas aproximadas. |
 | `wallpapers.js`, `assets/wallpapers/` | Galería local y créditos. |
-| `daily-photos-config.js` | Selección diaria de Commons; quitar el archivo evita esos pedidos. |
+| `daily-photos-config.js` | Opcional: copiar `daily-photos-config.example.js` para la selección diaria de Commons; sin el archivo, solo fotos locales. |
 | `transitions-config.js` | Episodios de YouTube; sorteo por OK, sin repetir el último. |
 | `lights-config.js` | Selección WiZ inicial opcional; también se elige desde Luces. |
 | `services/com.frxn.mipantalla.lights/screen-config.json` | Captura opcional privada; no copiar una configuración ajena. |

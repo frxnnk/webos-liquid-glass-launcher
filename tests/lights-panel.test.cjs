@@ -717,12 +717,13 @@ test('requests come only from clicks: no focus or key handler talks to the clien
   assert.doesNotMatch(keys, /controller\.(?!close)|client/);
 });
 
-test('index.html: Luces beside Solo fondo on the right, panel closed, dock untouched', () => {
+test('index.html: Luces between Personalizar and Fondo under the weather, panel closed, dock untouched', () => {
   const html = read('index.html');
-  const actions = html.slice(html.indexOf('<div class="top-actions">'), html.indexOf('id="weather"'));
+  assert.ok(html.indexOf('id="weather"') < html.indexOf('<div class="top-actions">'), 'the buttons sit under the weather card');
+  const actions = html.slice(html.indexOf('<div class="top-actions">'), html.indexOf('</header>'));
   assert.match(actions, /<button id="lights-button"[^>]*\bhidden>/);
+  assert.ok(actions.indexOf('id="edit-button"') < actions.indexOf('id="lights-button"'));
   assert.ok(actions.indexOf('id="lights-button"') < actions.indexOf('id="wallpaper-button"'));
-  assert.equal(actions.includes('id="edit-button"'), false);
   assert.match(html, /<section id="lights-panel"[^>]*role="dialog"[^>]*aria-modal="true"[^>]*hidden>/);
   assert.ok(html.indexOf('lights-panel.js') < html.indexOf('<script src="app.js">'));
   assert.match(html, /<link rel="stylesheet" href="lights-panel.css">/);

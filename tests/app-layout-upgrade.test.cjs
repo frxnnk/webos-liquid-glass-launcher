@@ -19,16 +19,29 @@ function upgrade(saved) {
   return Array.from(context.items, item => ({key: item.key, visible: item.visible}));
 }
 
-test('upgrading a saved seven-icon layout adds Homebrew without changing order or hidden choices', () => {
+test('upgrading a saved layout drops removed shortcuts and adds the new ones without changing order or hidden choices', () => {
+  const added = ['twitch', 'hbomax', 'flow', 'hdmi2'];
   for (const keys of [
-    ['youtube', 'spotify', 'nuvio', 'netflix', 'disney', 'transitions', 'hdmi1'],
-    ['hdmi1', 'transitions', 'nuvio', 'youtube', 'disney', 'netflix', 'spotify']
+    ['youtube', 'spotify', 'nuvio', 'netflix', 'disney', 'transitions', 'homebrew', 'hdmi1'],
+    ['hdmi1', 'transitions', 'nuvio', 'youtube', 'homebrew', 'disney', 'netflix', 'spotify']
   ]) {
-    const saved = keys.map(key => ({key, visible: key !== 'netflix' && key !== 'nuvio'}));
+    const saved = keys.map(key => ({key, visible: key !== 'netflix'}));
     const updated = upgrade(saved);
-    assert.deepEqual(updated.filter(item => keys.includes(item.key)), saved);
-    assert.deepEqual(updated.filter(item => !keys.includes(item.key)), [{key: 'homebrew', visible: true}]);
-    const hidden = updated.map(item => item.key === 'homebrew' ? {key: item.key, visible: false} : item);
-    assert.deepEqual(upgrade(hidden), hidden, 'reopening keeps the new shortcut hidden if the user hides it');
+    const kept = saved.filter(item => !['nuvio', 'transitions', 'homebrew'].includes(item.key));
+    assert.deepEqual(updated.filter(item => keys.includes(item.key)), kept);
+    assert.deepEqual(updated.filter(item => !keys.includes(item.key)).map(item => item.key).sort(), added.slice().sort());
+    assert.ok(updated.every(item => item.key === 'netflix' || item.visible));
+    const hidden = updated.map(item => item.key === 'twitch' ? {key: item.key, visible: false} : item);
+    assert.deepEqual(upgrade(hidden), hidden, 'reopening keeps a new shortcut hidden if the user hides it');
+  }
+});
+
+test('each HDMI shortcut has its own icon with its port number', () => {
+  const config = {window: {}};
+  vm.runInNewContext(fs.readFileSync(path.join(root, 'config.js'), 'utf8'), config);
+  for (const port of ['1', '2']) {
+    const item = config.window.LAUNCHER_CONFIG.find(entry => entry.key === 'hdmi' + port);
+    assert.equal(item.logo, 'assets/logos/hdmi-' + port + '.svg');
+    assert.match(fs.readFileSync(path.join(root, item.logo), 'utf8'), new RegExp('aria-label="HDMI ' + port + '"'));
   }
 });

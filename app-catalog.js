@@ -4,8 +4,8 @@
   var FALLBACK = 'assets/logos/app.svg';
   // LG marca estas apps de sistema como visible:false (no salen en su lista) pero sirven desde el inicio.
   // Se permiten solo por id; lo demás que LG oculta (anuncios, fábrica, ejemplos) sigue fuera.
-  // Sin Software Update ni Installation: actualizar el firmware quitaría el root. HDMI 4 queda fuera
-  // porque muchos modelos tienen tres puertos; HDMI 1 ya es un acceso propio.
+  // Sin Software Update ni Installation: actualizar el firmware quitaría el root. HDMI 3 y 4 quedan
+  // fuera porque esta TV tiene dos puertos; HDMI 1 y 2 ya son accesos propios.
   var SYSTEM = {
     'com.palm.app.settings': { title: 'Configuración', logo: 'assets/logos/system-settings.svg' },
     'com.webos.app.livetv': { title: 'TV en vivo', logo: 'assets/logos/system-livetv.svg' },
@@ -17,8 +17,7 @@
     'com.webos.app.self-diagnosis': { title: 'Ayuda rápida', logo: 'assets/logos/system-help.svg' },
     'com.webos.app.tvuserguide': { title: 'Guía del usuario', logo: 'assets/logos/system-manual.svg' },
     'com.webos.app.home': { title: 'Home de LG', logo: 'assets/logos/system-home.svg' },
-    'com.webos.app.hdmi2': { title: 'HDMI 2', kind: 'input', logo: 'assets/logos/hdmi.svg' },
-    'com.webos.app.hdmi3': { title: 'HDMI 3', kind: 'input', logo: 'assets/logos/hdmi.svg' }
+    'com.webos.app.hdmi2': { title: 'HDMI 2', kind: 'input', logo: 'assets/logos/hdmi-2.svg' }
   };
   function systemEntry(id) { return typeof id === 'string' && Object.prototype.hasOwnProperty.call(SYSTEM, id) ? SYSTEM[id] : null; }
 
@@ -65,10 +64,29 @@
     items.forEach(function (item) { if (!item.catalogApp && !item.action) ids[item.appId] = true; });
     return ids;
   }
+  // tvIcon: el acceso usa el ícono que declara la TV (copiado por el servicio en assets/app-icons/);
+  // el logo incluido queda como respaldo si la copia falta o no carga.
+  function tvIcon(item, logo) {
+    if (!item.tvIcon) return;
+    if (!item.fallbackLogo) item.fallbackLogo = item.logo;
+    if (LOCAL_ICON.test(String(logo))) item.logo = logo;
+  }
+  function tvIcons(items, apps) {
+    var logos = Object.create(null);
+    (Array.isArray(apps) ? apps : []).forEach(function (entry) {
+      if (entry && typeof entry.id === 'string' && LOCAL_ICON.test(String(entry.logo))) logos[entry.id] = entry.logo;
+    });
+    return (Array.isArray(items) ? items : []).map(function (entry) {
+      var item = copy(entry);
+      if (item.tvIcon && logos[item.appId]) tvIcon(item, logos[item.appId]);
+      return item;
+    });
+  }
   function restore(defaults, stored) {
     var base = (Array.isArray(defaults) ? defaults : []).slice(0, MAX_APPS).map(function (item) {
       var result = copy(item);
       result.visible = true;
+      tvIcon(result, null);
       return result;
     });
     if (!Array.isArray(stored)) return base;
@@ -81,7 +99,7 @@
     stored.slice(0, MAX_APPS).forEach(function (entry) {
       if (!entry || typeof entry !== 'object' || typeof entry.key !== 'string' || used[entry.key]) return;
       var item = byKey[entry.key];
-      if (item) item.visible = entry.visible !== false;
+      if (item) { item.visible = entry.visible !== false; tvIcon(item, entry.logo); }
       else {
         if (extras >= MAX_APPS - base.length) return;
         item = extra(entry, true);
@@ -124,7 +142,7 @@
     incoming.forEach(function (item) {
       if (!used[item.key] && result.length < MAX_APPS) result.push(item);
     });
-    return result;
+    return tvIcons(result, apps);
   }
   function serialize(items) {
     return (Array.isArray(items) ? items : []).slice(0, MAX_APPS).map(function (item) {
@@ -135,7 +153,7 @@
         saved.appId = safe.appId;
         saved.title = safe.title;
         saved.logo = safe.logo;
-      }
+      } else if (item.tvIcon && LOCAL_ICON.test(String(item.logo))) saved.logo = item.logo;
       return saved;
     }).filter(function (item) { return item !== null; });
   }
@@ -153,5 +171,5 @@
     }
     return result;
   }
-  window.LauncherCatalog = { restore: restore, merge: merge, serialize: serialize, move: move };
+  window.LauncherCatalog = { restore: restore, merge: merge, tvIcons: tvIcons, serialize: serialize, move: move };
 }());

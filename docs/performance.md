@@ -268,6 +268,32 @@ frío (≈5–8 % del total), a costa de reestructurar el montaje del panel. No 
 al costo y el riesgo, y el caso frecuente (Home) ya es de 110 ms. Tampoco se detuvo ni deshabilitó ningún servicio
 por esta medición.
 
+## Rediseño A: foco con flechas (23 de octubre de 2026)
+
+Mismo método que la 0.7.0, en la TV real y por CDP: flechas izquierda/derecha cada 120 ms durante 3,5 s
+sobre la fila Apps, registrando los intervalos de `requestAnimationFrame`. Las variantes se inyectaron como CSS
+en la página en vivo (sin instalar) y se retiraron al terminar. Valores típicos de 2–3 corridas por variante:
+
+| Variante | Media entre cuadros | Percentil 95 | Intervalos > 25 ms |
+| --- | ---: | ---: | ---: |
+| TV en reposo, sin flechas | 16,67 ms | 16,67 ms | 0 de 150 |
+| Rediseño instalado (escala animada tras 150 ms, halo difuso) | ~18,5 ms | 33,33 ms | 11–21 de ~210 |
+| Sin halo difuso | ~18,2 ms | 33,33 ms | 11–19 |
+| Espera de 60 ms antes de animar | ~27 ms | 50 ms | ~68 de ~145 |
+| Sin espera, escala animada | ~38 ms | 50–67 ms | ~90 de ~100 |
+| Escala animada con `will-change` o `translateZ` | sin cambio | — | — |
+| Sin canvas de vidrio, sin sombra del panel o sin scroll de la fila | sin cambio relevante | — | — |
+| **Escala instantánea y halo sin difuso (aplicado)** | **16,7–17,3 ms** | **16,67 ms** | **1–7 de ~230** |
+
+Animar la escala del ícono es lo caro: los 150 ms de espera sólo lo ocultaban mientras se mantenía la flecha.
+Bajar la espera lo empeoraba. Ahora, en TV, aro y escala cambian al instante y el halo es sólo el aro con el
+borde de marca, sin sombra difusa. La vista previa de escritorio conserva la animación y el halo completo.
+Con el paquete instalado (`com.frxn.mipantalla_0.7.15_all.ipk`, 99 archivos, SHA-256
+`bbeedceaa490082ac0cb9f1d3cb56bcb81cda5d503591c9eacc8320244115e70`) y la app recién abierta, seis corridas del mismo
+método dieron una media de 17,2–18,0 ms (mediana 17,3 ms). El percentil 95 fue de 16,67 ms en cinco corridas y de 33,33 ms en una.
+Hubo 5–11 intervalos de más de 25 ms en ~225, con la TV en reposo a 16,67 ms. Se registró el recorrido del foco de una corrida:
+va y vuelve dentro de la fila Apps. Falta la prueba con el control real.
+
 ## Estado de privacidad y protección del root el 22 de octubre de 2026
 
 - **Life's Good Without Spying está activo** (hook `50-lifesgoodwithoutspying`, creado a la 01:54; no lo aplicó

@@ -51,18 +51,27 @@
     if (text) node.textContent = text;
     return node;
   }
+  // Si el ícono no carga: primero el logo incluido (íconos de la TV), después el genérico.
   function logo(item, className) {
     var image = element('img', className);
+    var fallbacks = [item.fallbackLogo, 'assets/logos/app.svg'].filter(function (src) { return src && src !== item.logo; });
     image.src = item.logo;
     image.alt = '';
     image.setAttribute('draggable', 'false');
-    var failed = false;
     image.addEventListener('error', function () {
-      if (failed) { image.hidden = true; return; }
-      failed = true;
-      image.src = 'assets/logos/app.svg';
+      if (item.fallbackLogo && image.src.indexOf(item.logo) !== -1) syncTvIcons();
+      if (!fallbacks.length) { image.hidden = true; return; }
+      image.src = fallbacks.shift();
     });
     return image;
+  }
+  // Las marcas sueltas (sistema de LG, genérico) no traen fondo propio: van más chicas sobre el vidrio.
+  function isMark(src) { return /^assets\/logos\/(?:system-|app\.svg)/.test(src); }
+  function brandGlow(color) {
+    var hex = /^#([0-9a-f]{6})$/i.exec(color || '');
+    if (!hex) return 'rgba(255, 255, 255, .45)';
+    var value = parseInt(hex[1], 16);
+    return 'rgba(' + (value >> 16) + ', ' + (value >> 8 & 255) + ', ' + (value & 255) + ', .6)';
   }
   function itemByKey(key) {
     return items.filter(function (item) { return item.key === key; })[0] || null;
@@ -152,20 +161,21 @@
     if (event.target && event.target.tagName === 'BUTTON') showFocus(event.target);
   });
 
-  // ---------- Inicio: solo íconos; el nombre queda en aria-label ----------
+  // ---------- Inicio: ícono y nombre; el halo de foco toma el color de la marca ----------
   function tileFor(item) {
     var tile = element('button', 'tile');
     tile.type = 'button';
     tile.dataset.id = item.key;
     tile.setAttribute('data-state', availabilityState(item));
     tile.setAttribute('aria-label', labelFor(item));
-    tile.style.setProperty('--tile-color', item.color);
-    tile.appendChild(element('span', 'tile-glow'));
-    var glass = element('span', 'tile-glass');
-    glass.appendChild(element('span', 'tile-tint'));
-    glass.appendChild(logo(item, 'tile-logo'));
-    glass.appendChild(element('span', 'tile-ring'));
-    tile.appendChild(glass);
+    tile.style.setProperty('--brand', item.color || '#ffffff');
+    tile.style.setProperty('--glow', brandGlow(item.color));
+    var icon = element('span', 'tile-icon' + (isMark(item.logo) ? ' is-mark' : ''));
+    icon.appendChild(logo(item, 'tile-logo'));
+    tile.appendChild(icon);
+    var name = element('span', 'tile-label', item.title);
+    name.setAttribute('aria-hidden', 'true');
+    tile.appendChild(name);
     var note = element('span', 'tile-note', 'No encontrada');
     note.setAttribute('aria-hidden', 'true');
     tile.appendChild(note);
@@ -225,6 +235,26 @@
       });
     });
   }
+  // Disney+ y Flow muestran el ícono real de la TV. Solo el servicio de luces (root) copia los íconos
+  // en assets/app-icons/, así que se le pide directo; una vez por sesión, si falta la copia
+  // (primera vez, o una reinstalación la borró). Sin servicio queda el logo incluido.
+  var tvIconsSynced = false;
+  function syncTvIcons() {
+    var client = window.LAUNCHER_LIGHTS_CLIENT;
+    if (!onTV || tvIconsSynced || !client || typeof client.listApps !== 'function') return;
+    tvIconsSynced = true;
+    client.listApps().then(function (result) {
+      var updated = catalog.tvIcons(items, result && result.apps);
+      var changed = updated.some(function (item, index) { return item.logo !== items[index].logo; });
+      if (!changed) return;
+      items = updated;
+      save(); render();
+      if (current && current.dataset && current.dataset.id) {
+        var tile = document.querySelector('.tile[data-id="' + current.dataset.id + '"]');
+        if (tile && !editing) { current = null; tile.focus(); showFocus(tile); }
+      }
+    }, function () { /* sin servicio de luces: queda el logo incluido */ });
+  }
   function refreshCatalog() {
     if (catalogLoading) return;
     // LAUNCHER_DEMO_APPS solo lo define la demo local (scripts/preview-lights-demo.js): un catálogo simulado.
@@ -270,10 +300,10 @@
     document.getElementById('manage-list').hidden = value;
     document.getElementById('sources-view').hidden = !value;
     document.getElementById('reset-button').hidden = value;
-    document.getElementById('manage-title').textContent = value ? 'Fuentes' : 'Apps y orden';
+    document.getElementById('manage-title').textContent = value ? 'Fuentes' : 'Personalizar';
     document.querySelector('.manage-description').textContent = value
       ? 'Créditos de la foto a la vista y servicios que usa el inicio.'
-      : 'Ocultar una app acá no la desinstala de la tele.';
+      : 'Elegí qué apps ver en el dock y en qué orden.';
     var button = document.getElementById('sources-button');
     button.textContent = value ? 'Apps' : 'Fuentes';
     if (value) renderSources();
@@ -371,8 +401,11 @@
 
   function updateClock() {
     var now = new Date();
+    var weekday = now.toLocaleDateString('es-AR', { weekday: 'long' });
     document.getElementById('clock').textContent = now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
-    document.getElementById('date').textContent = now.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+    // "Viernes 23 de octubre", sin la coma que agrega toLocaleDateString con el día de la semana.
+    document.getElementById('date').textContent = weekday.charAt(0).toUpperCase() + weekday.slice(1) + ' ' +
+      now.getDate() + ' de ' + now.toLocaleDateString('es-AR', { month: 'long' });
   }
   document.querySelector('.preview-label').hidden = onTV;
   render(); updateClock();
@@ -390,8 +423,11 @@
     backgrounds = window.LauncherBackgrounds.mount({
       stage: document.querySelector('.stage'),
       images: Array.prototype.slice.call(document.querySelectorAll('.wallpaper-layer')),
-      frosts: Array.prototype.slice.call(document.querySelectorAll('.frost-layer')),
-      frostHost: document.querySelector('.dock-frost'),
+      // Cada panel de vidrio tiene dos canvas (uno por capa de fondo): frosts[capa] = [Apps, Entradas].
+      frosts: [0, 1].map(function (layer) {
+        return Array.prototype.filter.call(document.querySelectorAll('.frost-layer'), function (canvas, index) { return index % 2 === layer; });
+      }),
+      frostHosts: Array.prototype.slice.call(document.querySelectorAll('.dock-frost')),
       credit: document.getElementById('photo-credit'),
       fallback: 'assets/wallpaper.svg',
       initialList: initialPhotos,
@@ -401,7 +437,7 @@
       }
     });
   }
-  if (window.LauncherWeather) weather = window.LauncherWeather.mount(document.getElementById('weather'), window.LAUNCHER_WEATHER);
+  if (window.LauncherWeather) weather = window.LauncherWeather.mount(document.getElementById('weather'), window.LAUNCHER_WEATHER, document.getElementById('weather-status'));
   // Luces WiZ: el cliente del servicio (window.LAUNCHER_LIGHTS_CLIENT) se busca al abrir el panel;
   // sin cliente, el panel explica que el control no está instalado. Sin módulo, el botón sigue oculto.
   if (window.createLightsClient) {
@@ -448,4 +484,5 @@
       updateAvailability(item);
     });
   });
+  if (items.some(function (item) { return item.visible && item.fallbackLogo && item.logo === item.fallbackLogo; })) syncTvIcons();
 }());

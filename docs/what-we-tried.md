@@ -55,7 +55,7 @@ no resolverse nunca. Si el código la espera, la rotación se congela.
 Ahora decide `onload`: si la imagen cargó, sirve; `decode()` se espera **como máximo 2 s** como
 mejora, no como requisito.
 
-**Rotación:** dos capas `<img>` con fundido de 1,2 s cada 5 minutos. La siguiente foto se precarga
+**Rotación:** dos capas `<img>` con fundido de 1,2 s cada 2:30 minutos. La siguiente foto se precarga
 cuando termina el fundido. Sin video, WebGL ni filtros CSS.
 
 **App oculta:** con `visibilitychange` se cancela el temporizador de precarga mientras la app no se

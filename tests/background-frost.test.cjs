@@ -33,3 +33,26 @@ test('older canvas without a filter still paints, and unavailable contexts fail 
   const f=fixture(false);assert.equal(f.paint(f.canvas,{naturalWidth:1920,naturalHeight:1080}),true);
   assert.equal(f.paint({getContext:()=>null},{naturalWidth:1920,naturalHeight:1080}),false);
 });
+test('each glass panel gets a frost copy: one blurred paint, the other panels copy it',()=>{
+  const helpers=source.slice(source.indexOf('  function paintFrost('),source.indexOf('  function mount('));
+  const draws=[],toggles=[];
+  function canvas(name){
+    const attributes={};
+    const result={name,width:0,height:0,attributes,setAttribute:(key,value)=>{attributes[key]=String(value);},getAttribute:(key)=>attributes[key]??null,
+      classList:{toggle:(cls,on)=>toggles.push([name,cls,on])}};
+    const context={clearRect(){},filter:'none',drawImage(image){draws.push({into:name,from:image.name||'photo',filter:context.filter});}};
+    result.getContext=()=>context;
+    return result;
+  }
+  const context={FROST_WIDTH:160,FROST_BLUR:3};
+  vm.runInNewContext(helpers,context);
+  const group=context.frostGroup([canvas('apps'),canvas('inputs')]);
+  assert.equal(context.paintGroup(group,{naturalWidth:1920,naturalHeight:1080}),true);
+  assert.equal(draws.filter(d=>d.from==='photo').every(d=>d.into==='apps'),true,'the photo is decoded into one canvas only');
+  assert.deepEqual(draws.filter(d=>d.into==='inputs').map(d=>d.from),['apps']);
+  const [apps,inputs]=group.canvases;
+  assert.deepEqual([inputs.width,inputs.height,inputs.attributes['data-width'],inputs.attributes['data-height']],[160,90,'1920','1080']);
+  group.classList.toggle('is-front',true);
+  assert.deepEqual(toggles,[['apps','is-front',true],['inputs','is-front',true]]);
+  assert.equal(apps.width,160);
+});

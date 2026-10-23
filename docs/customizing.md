@@ -3,10 +3,22 @@
 Desde la **0.7.9**, Personalizar permite sumar las apps instaladas que la TV ofrece para abrir,
 además de los accesos iniciales de Mi pantalla.
 
+## Diseño "Reloj protagonista"
+
+El reloj y la fecha van arriba a la izquierda. A la derecha está la tarjeta del clima (condición,
+sensación térmica, máxima y mínima del día) y debajo los botones **Personalizar**, **Luces** y
+**Fondo**. Abajo, dos paneles de vidrio: **Apps** y **Entradas**, con el nombre bajo cada ícono y
+un halo del color de la marca en el ícono enfocado. El pie muestra a qué hora se actualizó el
+clima y el crédito de la foto. El diseño de origen está en `tele-rediseno/` (opción A).
+
+Disney+ y Flow muestran el ícono real que tiene la TV: el servicio de luces lo copia en
+`assets/app-icons/` al listar las apps, y Mi pantalla lo recuerda. Si el servicio no está
+instalado o la copia falta, se ve el logo incluido en `assets/logos/`.
+
 ## Modo Solo fondo (0.7.10)
 
-**Personalizar** está arriba a la izquierda, en el lugar de la marca. **Solo fondo**, junto a
-Luces, oculta el dock, reloj, clima y textos para dejar la imagen a pantalla completa.
+**Fondo** (modo Solo fondo), junto a Personalizar y Luces, oculta los paneles, reloj, clima y
+textos para dejar la imagen a pantalla completa.
 La galería conserva su rotación y las fotos diarias.
 
 Para volver, pulsá **OK**, **Atrás** o una flecha; con puntero, hacé un clic. La primera
@@ -20,7 +32,7 @@ No se guarda como modo de arranque. Los créditos de las fotos se consultan en P
    launcher no espera esa búsqueda.
 2. Buscá la app en la lista y pulsá **Agregar**. Aparece en el inicio y el cambio se guarda en
    ese momento.
-3. Para sacarla de la fila, pulsá su control **En inicio**: queda oculta y la podés volver a agregar.
+3. Para sacarla de la fila, pulsá su interruptor **Visible**: pasa a **Oculta** y la podés volver a agregar.
 4. Si instalaste otra app, usá **Actualizar apps** o cerrá y volvé a abrir Personalizar.
 
 Ocultar un acceso **no desinstala la app**. Agregarlo tampoco instala nada: abre la aplicación
@@ -30,6 +42,7 @@ y aparece en el inventario, pero un acceso por sí solo no reemplaza su instalac
 ## Cambiar el orden con el control
 
 Usá las flechas del control para elegir una fila y sus botones; **OK** aplica la acción.
+Cada fila muestra su posición, el ícono, el nombre, los botones **↑** y **↓** y el interruptor.
 Los botones **↑** y **↓** de cada app visible la mueven una posición antes o después entre las
 apps del inicio. El orden se guarda con cada cambio. Primero agregá una app oculta para moverla.
 
@@ -44,7 +57,7 @@ Los accesos que agregues también se guardan con los datos necesarios para mostr
 antes de recibir otro inventario. Si la consulta falla o estás sin conexión, se mantiene esa
 selección y podés reintentar; un error no se interpreta como una lista vacía.
 
-**Restablecer selección** devuelve los accesos iniciales y su orden. Las otras apps que ya
+**Restablecer** devuelve los accesos iniciales y su orden. Las otras apps que ya
 aparecieron en el catálogo quedan ocultas, pero siguen disponibles para agregar desde la lista.
 
 ## Qué aparece en el catálogo

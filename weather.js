@@ -5,6 +5,7 @@
   'use strict';
   var ENDPOINT = 'https://api.open-meteo.com/v1/forecast';
   var CURRENT = 'temperature_2m,apparent_temperature,weather_code,is_day';
+  var DAILY = 'temperature_2m_max,temperature_2m_min';
   var REFRESH_MS = 15 * 60 * 1000;
   var STALE_MS = 30 * 60 * 1000;     // más viejo: se marca "Último dato HH:MM"
   var MAX_AGE_MS = 3 * 60 * 60 * 1000; // más viejo: no se muestra como clima actual
@@ -12,18 +13,19 @@
   var TIMEOUT_MS = 8000;
   var CACHE_KEY = 'mi-pantalla-weather-v1';
 
-  // Códigos WMO documentados por Open-Meteo → [condición, ícono].
+  // Códigos WMO documentados por Open-Meteo → [condición, ícono]. El ícono es el nombre del
+  // archivo en assets/weather/; despejado y parcial suman -dia/-noche en describe().
   var CODES = {
-    0: ['Despejado', 'clear'], 1: ['Mayormente despejado', 'partly'], 2: ['Parcialmente nublado', 'partly'],
-    3: ['Nublado', 'cloud'], 45: ['Niebla', 'fog'], 48: ['Niebla con escarcha', 'fog'],
-    51: ['Llovizna débil', 'drizzle'], 53: ['Llovizna', 'drizzle'], 55: ['Llovizna intensa', 'drizzle'],
-    56: ['Llovizna helada', 'drizzle'], 57: ['Llovizna helada intensa', 'drizzle'],
-    61: ['Lluvia débil', 'rain'], 63: ['Lluvia', 'rain'], 65: ['Lluvia intensa', 'rain'],
-    66: ['Lluvia helada', 'rain'], 67: ['Lluvia helada intensa', 'rain'],
-    71: ['Nevada débil', 'snow'], 73: ['Nevada', 'snow'], 75: ['Nevada intensa', 'snow'], 77: ['Nieve granulada', 'snow'],
-    80: ['Chaparrones', 'rain'], 81: ['Chaparrones fuertes', 'rain'], 82: ['Chaparrones violentos', 'rain'],
-    85: ['Chaparrones de nieve', 'snow'], 86: ['Chaparrones de nieve intensos', 'snow'],
-    95: ['Tormenta', 'storm'], 96: ['Tormenta con granizo', 'storm'], 97: ['Tormenta fuerte', 'storm'], 99: ['Tormenta con granizo fuerte', 'storm']
+    0: ['Despejado', 'despejado'], 1: ['Mayormente despejado', 'parcial'], 2: ['Parcialmente nublado', 'parcial'],
+    3: ['Nublado', 'nublado'], 45: ['Niebla', 'niebla'], 48: ['Niebla con escarcha', 'niebla'],
+    51: ['Llovizna débil', 'llovizna'], 53: ['Llovizna', 'llovizna'], 55: ['Llovizna intensa', 'llovizna'],
+    56: ['Llovizna helada', 'llovizna'], 57: ['Llovizna helada intensa', 'llovizna'],
+    61: ['Lluvia débil', 'lluvia'], 63: ['Lluvia', 'lluvia'], 65: ['Lluvia intensa', 'lluvia'],
+    66: ['Lluvia helada', 'lluvia'], 67: ['Lluvia helada intensa', 'lluvia'],
+    71: ['Nevada débil', 'nieve'], 73: ['Nevada', 'nieve'], 75: ['Nevada intensa', 'nieve'], 77: ['Nieve granulada', 'nieve'],
+    80: ['Chaparrones', 'lluvia'], 81: ['Chaparrones fuertes', 'lluvia'], 82: ['Chaparrones violentos', 'lluvia'],
+    85: ['Chaparrones de nieve', 'nieve'], 86: ['Chaparrones de nieve intensos', 'nieve'],
+    95: ['Tormenta', 'tormenta'], 96: ['Tormenta con granizo', 'tormenta'], 97: ['Tormenta fuerte', 'tormenta'], 99: ['Tormenta con granizo fuerte', 'tormenta']
   };
   var REASONS = {
     'no-config': 'Falta configurar la zona',
@@ -51,6 +53,7 @@
       '?latitude=' + encodeURIComponent(String(config.latitude)) +
       '&longitude=' + encodeURIComponent(String(config.longitude)) +
       '&current=' + encodeURIComponent(CURRENT).replace(/%2C/g, ',') +
+      '&daily=' + encodeURIComponent(DAILY).replace(/%2C/g, ',') + '&forecast_days=1' +
       '&timezone=auto';
   }
 
@@ -74,9 +77,16 @@
     if (!isNumber(code) || code % 1 !== 0 || !CODES.hasOwnProperty(code)) return null;
     if (current.is_day !== 0 && current.is_day !== 1) return null;
     var apparent = current.apparent_temperature;
+    // Máxima y mínima del día: opcionales; si no son válidas no se muestran, la lectura actual sigue.
+    var daily = body.daily && typeof body.daily === 'object' ? body.daily : {};
+    var max = Array.isArray(daily.temperature_2m_max) ? daily.temperature_2m_max[0] : null;
+    var min = Array.isArray(daily.temperature_2m_min) ? daily.temperature_2m_min[0] : null;
+    var range = isNumber(max) && isNumber(min) && max >= min && max <= 60 && min >= -90;
     return {
       temperature: temperature,
       apparent: isNumber(apparent) && apparent >= -100 && apparent <= 70 ? apparent : null,
+      max: range ? max : null,
+      min: range ? min : null,
       code: code,
       isDay: current.is_day === 1,
       validAt: stamp - offset * 1000
@@ -86,9 +96,19 @@
   function describe(reading) {
     var entry = CODES[reading.code];
     var icon = entry[1];
-    if (icon === 'clear' || icon === 'partly') icon += reading.isDay ? '-day' : '-night';
+    if (icon === 'despejado') icon += reading.isDay ? '-dia' : '-noche';
+    else if (icon === 'parcial' && !reading.isDay) icon = 'parcial-noche';
     return { label: entry[0], icon: icon };
   }
+  // Rutas literales: así el empaquetado y la vista previa autocontenida las encuentran en el código.
+  var ICONS = {
+    'despejado-dia': 'assets/weather/despejado-dia.svg', 'despejado-noche': 'assets/weather/despejado-noche.svg',
+    parcial: 'assets/weather/parcial.svg', 'parcial-noche': 'assets/weather/parcial-noche.svg',
+    nublado: 'assets/weather/nublado.svg', niebla: 'assets/weather/niebla.svg', llovizna: 'assets/weather/llovizna.svg',
+    lluvia: 'assets/weather/lluvia.svg', nieve: 'assets/weather/nieve.svg', tormenta: 'assets/weather/tormenta.svg',
+    desconocido: 'assets/weather/desconocido.svg'
+  };
+  function iconUrl(name) { return ICONS.hasOwnProperty(name) ? ICONS[name] : ICONS.desconocido; }
 
   function degrees(value) {
     var rounded = Math.round(value);
@@ -210,7 +230,8 @@
                 longitude: config.longitude,
                 fetchedAt: cache.fetchedAt,
                 utc_offset_seconds: body.utc_offset_seconds,
-                current: { time: body.current.time, temperature_2m: reading.temperature, apparent_temperature: reading.apparent, weather_code: reading.code, is_day: reading.isDay ? 1 : 0 }
+                current: { time: body.current.time, temperature_2m: reading.temperature, apparent_temperature: reading.apparent, weather_code: reading.code, is_day: reading.isDay ? 1 : 0 },
+                daily: { temperature_2m_max: [reading.max], temperature_2m_min: [reading.min] }
               }));
             } catch (storageError) { /* sin caché persistente: el widget sigue funcionando */ }
           }
@@ -243,28 +264,35 @@
   }
 
   // ---------- Presentación ----------
-  var XLINK = 'http://www.w3.org/1999/xlink';
   function clock(time) {
     return new Date(time).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
   }
-  function renderInto(root, view) {
-    var icon = root.querySelector('.weather-icon use');
+  // El estado del pie (punto verde o ámbar) acompaña a la tarjeta; es opcional.
+  function statusText(view) {
+    if (view.state === 'ok') return 'Clima actualizado a las ' + clock(view.fetchedAt);
+    if (view.state === 'stale') return 'Último dato del clima: ' + clock(view.validAt);
+    if (view.state === 'loading') return 'Consultando el clima…';
+    return 'Clima no disponible: ' + view.reason;
+  }
+  function renderInto(root, view, status) {
+    var icon = root.querySelector('.weather-icon');
     var temp = root.querySelector('.weather-temp');
     var condition = root.querySelector('.weather-condition');
+    var range = root.querySelector('.weather-range');
     var meta = root.querySelector('.weather-meta');
     root.setAttribute('data-state', view.state);
-    var iconName = 'unknown';
+    var iconName = 'desconocido';
+    var rangeText = '';
     if (view.reading) {
       iconName = view.condition.icon;
       temp.textContent = degrees(view.reading.temperature);
-      condition.textContent = view.condition.label;
-      meta.textContent = [
-        view.reading.apparent === null ? '' : 'ST ' + degrees(view.reading.apparent),
-        view.state === 'stale' ? 'Último dato ' + clock(view.validAt) : view.place + ' · ' + clock(view.validAt)
-      ].filter(Boolean).join(' · ');
+      condition.textContent = [view.condition.label, view.reading.apparent === null ? '' : 'ST ' + degrees(view.reading.apparent)].filter(Boolean).join(' · ');
+      if (view.reading.max !== null && view.reading.max !== undefined) rangeText = 'Máx ' + degrees(view.reading.max) + ' · Mín ' + degrees(view.reading.min);
+      meta.textContent = view.state === 'stale' ? 'Último dato ' + clock(view.validAt) : view.place + ' · ' + clock(view.validAt);
       root.setAttribute('aria-label', 'Clima en ' + view.place + ': ' + view.condition.label + ', ' +
         Math.round(view.reading.temperature) + ' grados' +
         (view.reading.apparent === null ? '' : ', sensación térmica ' + Math.round(view.reading.apparent)) +
+        (rangeText ? ', máxima ' + Math.round(view.reading.max) + ', mínima ' + Math.round(view.reading.min) : '') +
         (view.state === 'stale' ? '. Último dato de las ' : '. Dato de las ') + clock(view.validAt));
     } else {
       temp.textContent = '–';
@@ -272,10 +300,16 @@
       meta.textContent = view.state === 'loading' ? 'Consultando…' : view.reason;
       root.setAttribute('aria-label', view.state === 'loading' ? 'Consultando el clima' : 'Clima no disponible: ' + view.reason);
     }
-    if (icon) icon.setAttributeNS(XLINK, 'href', '#wx-' + iconName);
+    if (range) { range.textContent = rangeText; range.hidden = !rangeText; }
+    // Cambiar src recarga el SVG: solo cuando el ícono es otro.
+    if (icon && icon.getAttribute('src') !== iconUrl(iconName)) icon.setAttribute('src', iconUrl(iconName));
+    if (status) {
+      status.setAttribute('data-state', view.state);
+      status.textContent = statusText(view);
+    }
   }
 
-  function mount(root, config) {
+  function mount(root, config, status) {
     if (!root) return null;
     var storage = null;
     try { storage = window.localStorage; } catch (error) { storage = null; }
@@ -283,7 +317,7 @@
       config: config,
       storage: storage,
       isHidden: function () { return document.hidden === true; },
-      render: function (view) { renderInto(root, view); }
+      render: function (view) { renderInto(root, view, status || null); }
     });
     document.addEventListener('visibilitychange', weather.visibilityChanged);
     weather.start();
@@ -295,6 +329,9 @@
     buildUrl: buildUrl,
     parseForecast: parseForecast,
     describe: describe,
+    iconUrl: iconUrl,
+    statusText: statusText,
+    renderInto: renderInto,
     degrees: degrees,
     retryDelay: retryDelay,
     createWeather: createWeather,

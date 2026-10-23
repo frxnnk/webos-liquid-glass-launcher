@@ -158,8 +158,7 @@ test('useful LG system apps hidden by LG are offered, renamed and kept out of th
     ['com.palm.app.settings', 'Configuración', 'app', false, 'Sistema de LG'],
     ['com.webos.app.livetv', 'TV en vivo', 'app', false, 'Sistema de LG'],
     ['com.webos.app.home', 'Home de LG', 'app', false, 'Sistema de LG'],
-    ['com.webos.app.hdmi2', 'HDMI 2', 'input', false, 'Sistema de LG'],
-    ['com.webos.app.hdmi3', 'HDMI 3', 'input', false, 'Sistema de LG']
+    ['com.webos.app.hdmi2', 'HDMI 2', 'input', false, 'Sistema de LG']
   ]);
 });
 
@@ -175,9 +174,52 @@ test('a hidden system app that is not on the list, and any noWindow app, stay ex
 
 test('stored system apps keep their kind and name across a restart without a live inventory', () => {
   const catalog = load();
-  const merged = catalog.merge(catalog.restore(defaults(), null), [{ id: 'com.webos.app.hdmi3', title: 'HDMI3', visible: false }]);
-  merged.find(item => item.appId === 'com.webos.app.hdmi3').visible = true;
+  const merged = catalog.merge(catalog.restore(defaults(), null), [{ id: 'com.webos.app.hdmi2', title: 'HDMI2', visible: false }]);
+  merged.find(item => item.appId === 'com.webos.app.hdmi2').visible = true;
   const restored = plain(catalog.restore(defaults(), plain(catalog.serialize(merged))));
-  const hdmi3 = restored.find(item => item.appId === 'com.webos.app.hdmi3');
-  assert.deepEqual([hdmi3.kind, hdmi3.visible, hdmi3.title], ['input', true, 'HDMI 3']);
+  const hdmi2 = restored.find(item => item.appId === 'com.webos.app.hdmi2');
+  assert.deepEqual([hdmi2.kind, hdmi2.visible, hdmi2.title], ['input', true, 'HDMI 2']);
+});
+
+test('apps marked tvIcon use the icon the TV declares and keep the bundled logo as fallback', () => {
+  const catalog = load();
+  const base = [
+    { key:'disney', appId:'com.disney.disneyplus-prod', title:'Disney+', logo:'assets/logos/disney.svg', kind:'app', tvIcon:true },
+    { key:'netflix', appId:'netflix', title:'Netflix', logo:'assets/logos/netflix.svg', kind:'app' }
+  ];
+  const restored = catalog.restore(base, null);
+  assert.equal(restored[0].logo, 'assets/logos/disney.svg', 'without an inventory the bundled logo is shown');
+  assert.equal(restored[0].fallbackLogo, 'assets/logos/disney.svg');
+  const inventory = [
+    { id:'com.disney.disneyplus-prod', title:'Disney+', logo:'assets/app-icons/com.disney.disneyplus-prod.png' },
+    { id:'netflix', title:'Netflix', logo:'assets/app-icons/netflix.png' }
+  ];
+  const updated = catalog.tvIcons(restored, inventory);
+  assert.equal(updated[0].logo, 'assets/app-icons/com.disney.disneyplus-prod.png');
+  assert.equal(updated[1].logo, 'assets/logos/netflix.svg', 'only tvIcon apps change');
+  assert.equal(restored[0].logo, 'assets/logos/disney.svg', 'tvIcons does not mutate its input');
+  assert.equal(catalog.merge(restored, inventory)[0].logo, 'assets/app-icons/com.disney.disneyplus-prod.png', 'Personalizar refresh applies it too');
+  for (const logo of ['/usr/palm/applications/x/icon.png', 'assets/app-icons/../../x.png', 'file:///etc/passwd', undefined]) {
+    assert.equal(catalog.tvIcons(restored, [{ id:'com.disney.disneyplus-prod', title:'Disney+', logo }])[0].logo, 'assets/logos/disney.svg', String(logo));
+  }
+  const saved = plain(catalog.serialize(updated));
+  assert.deepEqual(saved[0], { key:'disney', visible:true, logo:'assets/app-icons/com.disney.disneyplus-prod.png' });
+  assert.deepEqual(saved[1], { key:'netflix', visible:true });
+  const again = catalog.restore(base, saved);
+  assert.equal(again[0].logo, 'assets/app-icons/com.disney.disneyplus-prod.png', 'the TV icon survives a restart');
+  assert.equal(again[0].fallbackLogo, 'assets/logos/disney.svg');
+  const forged = catalog.restore(base, [{ key:'disney', visible:true, logo:'file:///etc/passwd' }, { key:'netflix', visible:true, logo:'assets/app-icons/x.png' }]);
+  assert.equal(forged[0].logo, 'assets/logos/disney.svg');
+  assert.equal(forged[1].logo, 'assets/logos/netflix.svg', 'stored logos are ignored for apps without tvIcon');
+});
+
+test('config: Disney+ and Flow use the TV icon; the built-in logos come from the redesign', () => {
+  const sandbox = { window: {} };
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname, '..', 'config.js'), 'utf8'), sandbox);
+  const config = sandbox.window.LAUNCHER_CONFIG;
+  assert.deepEqual(plain(config.filter(item => item.tvIcon).map(item => item.key)), ['disney', 'flow']);
+  // The redesign logos are full tiles: a 120×120 rounded background (rx 26) under the mark.
+  for (const item of config) {
+    assert.match(fs.readFileSync(path.join(__dirname, '..', item.logo), 'utf8'), /<rect width="120" height="120" rx="26"/, item.key);
+  }
 });

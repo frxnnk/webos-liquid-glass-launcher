@@ -39,7 +39,7 @@
         if (rows[i].key !== key) continue;
         var target = rows[i].controls.filter(function (button) {
           return button.getAttribute('data-app-action') === (action || 'toggle') && !button.disabled;
-        })[0] || rows[i].controls[0];
+        })[0] || rows[i].controls[rows[i].controls.length - 1]; // el interruptor nunca se deshabilita
         target.focus();
         return true;
       }
@@ -47,7 +47,7 @@
     }
 
     function actionButton(item, action, label, callback) {
-      var button = element('button', action === 'toggle' ? 'switch-button apps-toggle' : 'apps-move');
+      var button = element('button', action === 'toggle' ? 'apps-toggle' : 'apps-move');
       button.type = 'button';
       button.setAttribute('aria-label', label);
       button.setAttribute('data-app-key', item.key);
@@ -61,11 +61,29 @@
       });
       return button;
     }
+    // Flecha como SVG en línea, armada nodo por nodo con createElementNS: sin recursos externos.
+    function chevron(up) {
+      var ns = 'http://www.w3.org/2000/svg';
+      var svg = document.createElementNS ? document.createElementNS(ns, 'svg') : element('span');
+      svg.setAttribute('viewBox', '0 0 24 24');
+      svg.setAttribute('class', 'apps-chevron');
+      svg.setAttribute('aria-hidden', 'true');
+      if (document.createElementNS) {
+        var path = document.createElementNS(ns, 'path');
+        path.setAttribute('d', up ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6');
+        svg.appendChild(path);
+      }
+      return svg;
+    }
 
+    // Fila del diseño: posición, ícono, nombre, ↑ ↓ y el interruptor "Visible/Oculta".
     function appRow(item, position, total) {
       var row = element('div', 'apps-row' + (item.visible ? '' : ' is-hidden'));
       row.setAttribute('role', 'listitem');
       row.setAttribute('data-app-row', item.key);
+      var index = element('span', 'apps-index', item.visible ? String(position) : '–');
+      index.setAttribute('aria-hidden', 'true');
+      row.appendChild(index);
       var icon = element('span', 'apps-icon');
       icon.setAttribute('aria-hidden', 'true');
       var initial = element('span', 'apps-initial', (item.title || 'A').charAt(0).toUpperCase());
@@ -73,10 +91,14 @@
       icon.appendChild(initial);
       if (item.logo) {
         var image = element('img', 'apps-image');
+        var fallback = item.fallbackLogo && item.fallbackLogo !== item.logo ? item.fallbackLogo : null;
         image.src = item.logo;
         image.alt = '';
         image.setAttribute('draggable', 'false');
-        image.addEventListener('error', function () { image.hidden = true; initial.hidden = false; });
+        image.addEventListener('error', function () {
+          if (fallback) { image.src = fallback; fallback = null; return; }
+          image.hidden = true; initial.hidden = false;
+        });
         icon.appendChild(image);
       }
       row.appendChild(icon);
@@ -84,33 +106,37 @@
       var title = element('span', 'apps-title', item.title);
       title.setAttribute('title', item.title);
       name.appendChild(title);
-      name.appendChild(element('small', '', (item.kind === 'input' ? 'Entrada' : 'Aplicación') +
+      name.appendChild(element('small', 'sr-only', (item.kind === 'input' ? 'Entrada' : 'Aplicación') +
         ' · ' + (item.visible ? 'Posición ' + position : 'Fuera del inicio')));
+      if (item.kind === 'input') name.appendChild(element('small', 'apps-kind', 'Entrada'));
       row.appendChild(name);
+
+      var earlier = actionButton(item, 'earlier', 'Mover ' + item.title + ' antes', function () {
+        if (options.onMove) options.onMove(item.key, -1);
+      });
+      earlier.appendChild(chevron(true));
+      earlier.disabled = !item.visible || position <= 1;
+      row.appendChild(earlier);
+      var later = actionButton(item, 'later', 'Mover ' + item.title + ' después', function () {
+        if (options.onMove) options.onMove(item.key, 1);
+      });
+      later.appendChild(chevron(false));
+      later.disabled = !item.visible || position >= total;
+      row.appendChild(later);
 
       var toggle = actionButton(item, 'toggle', (item.visible ? 'Ocultar ' : 'Agregar ') + item.title + (item.visible ? ' del inicio' : ' al inicio'), function () {
         if (options.onToggle) options.onToggle(item.key);
       });
       toggle.setAttribute('role', 'switch');
       toggle.setAttribute('aria-checked', item.visible ? 'true' : 'false');
+      var text = element('span', 'switch-text', item.visible ? 'Visible' : 'Oculta');
+      text.setAttribute('aria-hidden', 'true');
+      toggle.appendChild(text);
       var track = element('span', 'switch');
       track.appendChild(element('span', 'switch-knob'));
       toggle.appendChild(track);
       row.appendChild(toggle);
-
-      var earlier = actionButton(item, 'earlier', 'Mover ' + item.title + ' antes', function () {
-        if (options.onMove) options.onMove(item.key, -1);
-      });
-      earlier.textContent = '↑';
-      earlier.disabled = !item.visible || position <= 1;
-      row.appendChild(earlier);
-      var later = actionButton(item, 'later', 'Mover ' + item.title + ' después', function () {
-        if (options.onMove) options.onMove(item.key, 1);
-      });
-      later.textContent = '↓';
-      later.disabled = !item.visible || position >= total;
-      row.appendChild(later);
-      rows.push({key:item.key, controls:[toggle, earlier, later]});
+      rows.push({key:item.key, controls:[earlier, later, toggle]});
       return row;
     }
 
