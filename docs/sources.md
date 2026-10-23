@@ -48,7 +48,12 @@ pública, es una prueba hecha en la TV y así se marca en las otras docs.
 
 ## Clima
 
-- Open-Meteo, API de pronóstico: https://open-meteo.com/en/docs
+- Open-Meteo, API de pronóstico: https://open-meteo.com/en/docs (actual y máxima/mínima del día con
+  `daily=temperature_2m_max,temperature_2m_min&forecast_days=1`)
+- Logos de YouTube, Spotify, Netflix, Twitch y HBO Max: símbolos de Simple Icons 16.35 (CC0 1.0;
+  las marcas siguen siendo de sus dueños), sobre el fondo de cada ícono. Disney+ y Flow son
+  provisorios: en la TV se usa su ícono real. HDMI 1 y 2 y los íconos del clima (`assets/weather/`)
+  son propios del rediseño `tele-rediseno/`.
 
 ## Fotos
 

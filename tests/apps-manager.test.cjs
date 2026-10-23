@@ -86,8 +86,10 @@ test('remote arrows traverse long catalogs without geometry reads and keep the f
   assert.equal(h.manager.handlesNavigation('ArrowDown',h.document.activeElement),true);
   assert.equal(h.document.activeElement,h.control('app-29','earlier'));
   const row=h.list.querySelector('[data-app-row="app-29"]');assert.equal(row.scrolls.at(-1).block,'nearest');
-  h.manager.handlesNavigation('ArrowLeft',h.document.activeElement);assert.equal(h.document.activeElement,h.control('app-29','toggle'));
-  h.control('app-0','toggle').focus();h.manager.handlesNavigation('ArrowRight',h.document.activeElement);
+  h.manager.handlesNavigation('ArrowLeft',h.document.activeElement);assert.equal(h.document.activeElement,h.control('app-29','earlier'),'earlier is the first control of the row');
+  h.manager.handlesNavigation('ArrowRight',h.document.activeElement);assert.equal(h.document.activeElement,h.control('app-29','later'));
+  h.manager.handlesNavigation('ArrowRight',h.document.activeElement);assert.equal(h.document.activeElement,h.control('app-29','toggle'),'the switch is last, as in the design');
+  h.control('app-0','later').focus();h.manager.handlesNavigation('ArrowLeft',h.document.activeElement);
   assert.equal(h.document.activeElement,h.control('app-0','later'),'horizontal focus skips disabled earlier');
   h.control('app-0','toggle').focus();h.manager.handlesNavigation('ArrowUp',h.document.activeElement);
   assert.equal(h.document.activeElement,h.list.querySelector('.apps-refresh'));

@@ -408,16 +408,45 @@
     image.src = src;
   }
 
+  // Un panel de vidrio por canvas: cada capa de fondo tiene un canvas en cada panel. La primera
+  // copia se pinta con paintFrost y las demás la copian (sin volver a desenfocar).
+  function frostGroup(canvases) {
+    return {
+      canvases: canvases,
+      classList: { toggle: function (name, on) { canvases.forEach(function (canvas) { canvas.classList.toggle(name, on); }); } }
+    };
+  }
+  function paintGroup(group, image) {
+    if (!group.canvases) return paintFrost(group, image);
+    var first = group.canvases[0];
+    if (!first || !paintFrost(first, image)) return false;
+    try {
+      group.canvases.slice(1).forEach(function (canvas) {
+        canvas.width = first.width;
+        canvas.height = first.height;
+        canvas.getContext('2d').drawImage(first, 0, 0);
+        canvas.setAttribute('data-width', first.getAttribute('data-width'));
+        canvas.setAttribute('data-height', first.getAttribute('data-height'));
+      });
+      return true;
+    } catch (error) { return false; }
+  }
+
   function mount(options) {
     var stage = options.stage;
-    var host = options.frostHost;
-    var layers = options.images.map(function (image, index) { return { image: image, frost: options.frosts[index] }; });
+    var hosts = options.frostHosts || (options.frostHost ? [options.frostHost] : []);
+    var layers = options.images.map(function (image, index) {
+      var frost = options.frosts[index];
+      return { image: image, frost: Array.isArray(frost) ? frostGroup(frost) : frost };
+    });
     var storage = null;
     try { storage = window.localStorage; } catch (error) { storage = null; }
-    function frostEnabled() { return !!host && window.getComputedStyle(host).display !== 'none'; }
+    function frostEnabled() { return hosts.length > 0 && window.getComputedStyle(hosts[0]).display !== 'none'; }
     function layout() {
       if (!frostEnabled()) return;
-      layers.forEach(function (layer) { placeFrost(layer.frost, stage, host); });
+      layers.forEach(function (layer) {
+        (layer.frost.canvases || [layer.frost]).forEach(function (canvas) { placeFrost(canvas, stage, canvas.parentNode); });
+      });
     }
     var slideshow = createSlideshow({
       layers: layers,
@@ -427,7 +456,7 @@
       storage: storage,
       isHidden: function () { return document.hidden === true; },
       load: loadImage,
-      paint: paintFrost,
+      paint: paintGroup,
       frostEnabled: frostEnabled,
       layout: layout,
       onShow: function (entry) {
